@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const summaryIncorrect = document.getElementById('summary-incorrect');
     const summaryAccuracy = document.getElementById('summary-accuracy');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v5';
+    const STORAGE_KEY = 'vocabulary_tester_data_v6';
 
     // 预置部分初始词库
     const defaultWords = [

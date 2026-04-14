@@ -59,7 +59,7 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo [4/4] 正在推送到 GitHub (触发 Vercel 自动部署)...
+echo [4/4] 正在推送到 GitHub (触发 GitHub Pages 自动部署)...
 git push
 if %errorlevel% neq 0 (
     echo [错误] git push 失败！可能是网络原因，请检查连接。
@@ -70,6 +70,6 @@ if %errorlevel% neq 0 (
 echo.
 echo ==========================================
 echo 🎉 恭喜！新单词已加入并推送成功！
-echo Vercel 将在几秒钟内自动为您更新线上链接！
+echo GitHub Pages 将在约 1 分钟内自动为您更新线上链接！
 echo ==========================================
 pause
