@@ -7,8 +7,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const summaryCorrect = document.getElementById('summary-correct');
     const summaryIncorrect = document.getElementById('summary-incorrect');
     const summaryAccuracy = document.getElementById('summary-accuracy');
+    const errorModulesContainer = document.getElementById('error-modules-container');
+    const errorModulesList = document.getElementById('error-modules-list');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v8';
+    const STORAGE_KEY = 'vocabulary_tester_data_v9';
 
     // 预置部分初始词库
     const defaultWords = [
@@ -279,6 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (wordObj.group !== undefined && wordObj.group !== lastGroup) {
                 const separatorTr = document.createElement('tr');
                 separatorTr.className = 'group-separator';
+                separatorTr.id = `module-${wordObj.group}`; // 添加锚点 ID，方便跳转
+
                 const separatorTd = document.createElement('td');
                 separatorTd.colSpan = 3;
 
@@ -382,6 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
     submitTestBtn.addEventListener('click', () => {
         let correctCount = 0;
         let totalCount = 0;
+        const errorGroups = new Set(); // 收集有错题的模组编号
 
         words.forEach(wordObj => {
             const userAns = wordObj.userAnswer || '';
@@ -402,6 +407,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (wordObj.isCorrect) {
                 correctCount++;
+            } else {
+                if (wordObj.group) {
+                    errorGroups.add(wordObj.group); // 记录错误模组
+                }
             }
         });
 
@@ -417,6 +426,39 @@ document.addEventListener('DOMContentLoaded', () => {
             summaryCorrect.textContent = correctCount;
             summaryIncorrect.textContent = incorrectCount;
             summaryAccuracy.textContent = accuracy + '%';
+
+            // 渲染错题模组跳转按钮
+            if (errorGroups.size > 0) {
+                errorModulesContainer.style.display = 'block';
+                errorModulesList.innerHTML = '';
+
+                // 将模组编号排序后生成按钮
+                const sortedGroups = Array.from(errorGroups).sort((a, b) => a - b);
+                sortedGroups.forEach(group => {
+                    const link = document.createElement('a');
+                    link.href = `#module-${group}`;
+                    link.className = 'error-module-link';
+                    link.textContent = `模组 ${group}`;
+
+                    // 绑定点击事件，实现平滑滚动
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const targetModule = document.getElementById(`module-${group}`);
+                        if (targetModule) {
+                            targetModule.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            // 添加一个短暂的闪烁提示效果
+                            targetModule.style.backgroundColor = '#fff3cd';
+                            setTimeout(() => {
+                                targetModule.style.backgroundColor = '';
+                            }, 1000);
+                        }
+                    });
+
+                    errorModulesList.appendChild(link);
+                });
+            } else {
+                errorModulesContainer.style.display = 'none';
+            }
 
             testSummary.style.display = 'block';
 
@@ -438,6 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
             saveData();
             renderTable();
             testSummary.style.display = 'none';
+            errorModulesContainer.style.display = 'none'; // 重置时隐藏错题跳转区
         }
     });
 

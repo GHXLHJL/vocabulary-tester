@@ -134,6 +134,26 @@ td input[type="text"]:focus {
     color: #721c24;
 }
 
+/* 错题模组链接按钮样式 */
+.error-module-link {
+    display: inline-block;
+    padding: 6px 14px;
+    background-color: #ff4757;
+    color: white;
+    text-decoration: none;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(255, 71, 87, 0.3);
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.error-module-link:hover,
+.error-module-link:active {
+    background-color: #ff6b81;
+    transform: scale(1.05);
+}
+
 /* 响应式设计：适配手机屏幕 */
 @media (max-width: 600px) {
     body {
