@@ -17,8 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingNavBadge = document.getElementById('floating-nav-badge');
     const floatingNavPanel = document.getElementById('floating-nav-panel');
     const floatingNavList = document.getElementById('floating-nav-list');
+    const floatingNavOverlay = document.getElementById('floating-nav-overlay');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v13';
+    const STORAGE_KEY = 'vocabulary_tester_data_v14';
 
     // 预置部分初始词库
     const defaultWords = [
@@ -256,6 +257,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let words = [];
     let isShowingOnlyErrors = false; // 记录当前是否处于“只看错题”模式
+
+    function setBackToTopVisible(isVisible) {
+        backToTopBtn.classList.toggle('is-visible', isVisible);
+    }
+
+    function setFloatingNavVisible(isVisible) {
+        floatingNavContainer.classList.toggle('is-visible', isVisible);
+        if (!isVisible) {
+            setFloatingNavOpen(false);
+        }
+    }
+
+    function setFloatingNavOpen(isOpen) {
+        floatingNavPanel.classList.toggle('open', isOpen);
+        floatingNavOverlay.classList.toggle('open', isOpen);
+        floatingNavToggle.setAttribute('aria-expanded', String(isOpen));
+    }
 
     // 生成唯一 ID
     function generateId() {
@@ -495,7 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // ==== 渲染悬浮错题导航 ====
             if (errorGroups.size > 0) {
-                floatingNavContainer.style.display = 'block';
+                setFloatingNavVisible(true);
                 floatingNavBadge.textContent = errorGroups.size;
                 floatingNavList.innerHTML = '';
 
@@ -523,15 +541,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             }, 1000);
 
                             // 跳转后自动收起面板
-                            floatingNavPanel.classList.remove('open');
+                            setFloatingNavOpen(false);
                         }
                     });
 
                     floatingNavList.appendChild(link);
                 });
             } else {
-                floatingNavContainer.style.display = 'none';
-                floatingNavPanel.classList.remove('open');
+                setFloatingNavVisible(false);
             }
 
             testSummary.style.display = 'block';
@@ -555,8 +572,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderTable();
             testSummary.style.display = 'none';
             filterErrorsContainer.style.display = 'none';
-            floatingNavContainer.style.display = 'none'; // 隐藏悬浮导航
-            floatingNavPanel.classList.remove('open');
+            setFloatingNavVisible(false);
             isShowingOnlyErrors = false; // 重置时恢复全部显示
             updateToggleButtonUI();
         }
@@ -571,14 +587,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 悬浮导航按钮点击事件：展开/收起错题列表
     floatingNavToggle.addEventListener('click', () => {
-        floatingNavPanel.classList.toggle('open');
+        setFloatingNavOpen(!floatingNavPanel.classList.contains('open'));
     });
 
     // 点击页面其他地方自动收起悬浮导航面板
     document.addEventListener('click', (e) => {
-        if (!floatingNavContainer.contains(e.target) && floatingNavPanel.classList.contains('open')) {
-            floatingNavPanel.classList.remove('open');
+        if (!floatingNavContainer.contains(e.target) &&
+            !floatingNavOverlay.contains(e.target) &&
+            floatingNavPanel.classList.contains('open')) {
+            setFloatingNavOpen(false);
         }
+    });
+
+    floatingNavOverlay.addEventListener('click', () => {
+        setFloatingNavOpen(false);
     });
 
     // 更新切换按钮的样式和文字
@@ -596,9 +618,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 监听滚动事件，当向下滚动超过 300px 时显示按钮
     window.addEventListener('scroll', () => {
         if (window.scrollY > 300) {
-            backToTopBtn.style.display = 'block';
+            setBackToTopVisible(true);
         } else {
-            backToTopBtn.style.display = 'none';
+            setBackToTopVisible(false);
         }
     });
 

@@ -157,7 +157,6 @@ td input[type="text"]:focus {
 /* 回到顶部悬浮按钮样式 */
 #back-to-top-btn {
     display: none;
-    /* 默认隐藏，由 JS 控制显示 */
     position: fixed;
     bottom: 30px;
     right: 30px;
@@ -180,6 +179,10 @@ td input[type="text"]:focus {
     -webkit-tap-highlight-color: transparent;
 }
 
+#back-to-top-btn.is-visible {
+    display: flex;
+}
+
 #back-to-top-btn:hover {
     background-color: #2980b9;
     transform: translateY(-3px);
@@ -188,11 +191,14 @@ td input[type="text"]:focus {
 /* 悬浮错题导航抽屉样式 */
 #floating-nav-container {
     display: none;
-    /* 默认隐藏，有错题才显示 */
     position: fixed;
     bottom: 30px;
     left: 30px;
     z-index: 9998;
+}
+
+#floating-nav-container.is-visible {
+    display: block;
 }
 
 #floating-nav-toggle {
@@ -228,7 +234,6 @@ td input[type="text"]:focus {
 
 #floating-nav-panel {
     display: none;
-    /* 默认折叠 */
     position: absolute;
     bottom: 60px;
     left: 0;
@@ -245,6 +250,10 @@ td input[type="text"]:focus {
 #floating-nav-panel.open {
     display: block;
     animation: slideUp 0.3s ease-out forwards;
+}
+
+#floating-nav-overlay {
+    display: none;
 }
 
 #floating-nav-panel .panel-header {
@@ -277,28 +286,30 @@ td input[type="text"]:focus {
 @media (max-width: 600px) {
     body {
         padding: 10px;
+        padding-bottom: 88px;
     }
 
     #back-to-top-btn {
-        bottom: 20px;
+        bottom: calc(14px + env(safe-area-inset-bottom, 0px));
         right: 12px;
-        width: 44px;
-        height: 44px;
+        width: 46px;
+        height: 46px;
         font-size: 20px;
-        display: none;
     }
 
     #floating-nav-container {
-        bottom: 20px;
+        bottom: calc(14px + env(safe-area-inset-bottom, 0px));
         left: 12px;
         max-width: calc(100vw - 68px);
     }
 
     #floating-nav-toggle {
+        min-height: 46px;
         padding: 10px 14px;
         font-size: 14px;
         border-radius: 24px;
         max-width: calc(100vw - 68px);
+        box-shadow: 0 8px 18px rgba(255, 71, 87, 0.24);
     }
 
     #floating-nav-badge {
@@ -307,11 +318,32 @@ td input[type="text"]:focus {
     }
 
     #floating-nav-panel {
-        bottom: 56px;
-        left: 0;
-        width: min(240px, calc(100vw - 24px));
-        max-height: 45vh;
-        padding: 12px;
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+        width: auto;
+        max-height: min(46vh, 380px);
+        padding: 14px;
+        border-radius: 16px;
+    }
+
+    #floating-nav-panel .panel-header {
+        font-size: 13px;
+        margin-bottom: 10px;
+    }
+
+    #floating-nav-list {
+        gap: 10px;
+    }
+
+    #floating-nav-overlay.open {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(24, 33, 45, 0.16);
+        z-index: 9997;
+        backdrop-filter: blur(1px);
     }
 
     .container {
