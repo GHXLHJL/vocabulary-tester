@@ -265,9 +265,16 @@ td input[type="text"]:focus {
 }
 
 #floating-nav-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+#floating-nav-list .error-module-link {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    padding: 8px 0;
 }
 
 @keyframes slideUp {
@@ -335,6 +342,11 @@ td input[type="text"]:focus {
 
     #floating-nav-list {
         gap: 10px;
+    }
+
+    #floating-nav-list .error-module-link {
+        font-size: 13px;
+        padding: 6px 0;
     }
 
     #floating-nav-overlay.open {
