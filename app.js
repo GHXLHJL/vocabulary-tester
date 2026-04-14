@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const summaryIncorrect = document.getElementById('summary-incorrect');
     const summaryAccuracy = document.getElementById('summary-accuracy');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v3';
+    const STORAGE_KEY = 'vocabulary_tester_data_v4';
 
     // 预置部分初始词库
     const defaultWords = [
@@ -277,12 +277,19 @@ document.addEventListener('DOMContentLoaded', () => {
         wordTbody.innerHTML = '';
         let lastGroup = null;
         words.forEach((wordObj, index) => {
-            // 如果存在 group 属性且与上一个不同，则插入分隔行
-            if (index > 0 && wordObj.group !== undefined && wordObj.group !== lastGroup) {
+            // 如果存在 group 属性且与上一个不同，则插入带有模组名称的分隔行
+            if (wordObj.group !== undefined && wordObj.group !== lastGroup) {
                 const separatorTr = document.createElement('tr');
                 separatorTr.className = 'group-separator';
                 const separatorTd = document.createElement('td');
                 separatorTd.colSpan = 3;
+
+                // 在分隔行中显示模组编号或名称
+                const groupLabel = document.createElement('div');
+                groupLabel.className = 'group-label';
+                groupLabel.textContent = `▶ 模组: ${wordObj.group}`;
+                separatorTd.appendChild(groupLabel);
+
                 separatorTr.appendChild(separatorTd);
                 wordTbody.appendChild(separatorTr);
             }

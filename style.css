@@ -101,11 +101,16 @@ td input[type="text"]:focus {
 
 /* 单词分组之间的分隔行 */
 .group-separator td {
-    background-color: #e2e6ea !important;
-    height: 12px;
-    padding: 0;
+    background-color: #e9ecef !important;
+    padding: 8px 15px !important;
     border-left: none;
     border-right: none;
+}
+
+.group-label {
+    font-weight: bold;
+    color: #495057;
+    font-size: 14px;
 }
 
 .result-cell {
