@@ -1,16 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
     const wordTbody = document.getElementById('word-tbody');
-    const addWordForm = document.getElementById('add-word-form');
     const submitTestBtn = document.getElementById('submit-test-btn');
-    const newWordInput = document.getElementById('new-word');
-    const newMeaningInput = document.getElementById('new-meaning');
+    const resetTestBtn = document.getElementById('reset-test-btn');
     const testSummary = document.getElementById('test-summary');
     const summaryTotal = document.getElementById('summary-total');
     const summaryCorrect = document.getElementById('summary-correct');
     const summaryIncorrect = document.getElementById('summary-incorrect');
     const summaryAccuracy = document.getElementById('summary-accuracy');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v4';
+    const STORAGE_KEY = 'vocabulary_tester_data_v5';
 
     // 预置部分初始词库
     const defaultWords = [
@@ -429,28 +427,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 添加新单词事件绑定
-    addWordForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const word = newWordInput.value.trim();
-        const meaning = newMeaningInput.value.trim();
-
-        if (word && meaning) {
-            words.push({
-                id: generateId(),
-                group: 'custom',
-                word: word,
-                expectedAnswer: meaning,
-                userAnswer: '',
-                isCorrect: null
+    // 清空重填事件绑定
+    resetTestBtn.addEventListener('click', () => {
+        if (confirm('确定要清空所有答案重新测试吗？')) {
+            words.forEach(wordObj => {
+                wordObj.userAnswer = '';
+                wordObj.isCorrect = null;
             });
             saveData();
-            renderTable(); // 添加新单词后重新渲染表格
-
-            // 清空输入框并聚焦
-            newWordInput.value = '';
-            newMeaningInput.value = '';
-            newWordInput.focus();
+            renderTable();
+            testSummary.style.display = 'none';
         }
     });
 
