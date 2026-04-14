@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingNavPanel = document.getElementById('floating-nav-panel');
     const floatingNavList = document.getElementById('floating-nav-list');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v11';
+    const STORAGE_KEY = 'vocabulary_tester_data_v12';
 
     // 预置部分初始词库
     const defaultWords = [
