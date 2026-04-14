@@ -39,12 +39,13 @@
                     <div style="font-size: 16px;">准确率: <strong id="summary-accuracy"
                             style="color: #007bff; font-size: 20px;">0%</strong></div>
                 </div>
-                <!-- 新增：错题分布模组快速跳转区 -->
-                <div id="error-modules-container"
+                <!-- 新增：只看错题切换按钮区 -->
+                <div id="filter-errors-container"
                     style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc;">
-                    <div style="font-size: 15px; color: #555; margin-bottom: 10px;">发现错题，点击跳转复习：</div>
-                    <div id="error-modules-list"
-                        style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;"></div>
+                    <button id="toggle-errors-btn"
+                        style="padding: 10px 25px; background-color: #ff4757; color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 15px; font-weight: bold; box-shadow: 0 2px 5px rgba(255, 71, 87, 0.3); transition: background-color 0.2s;">
+                        只看错题
+                    </button>
                 </div>
             </div>
             <table id="word-table">
@@ -59,6 +60,23 @@
                     <!-- 动态渲染的单词行将插入到这里 -->
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- 悬浮回到顶部按钮 -->
+    <button id="back-to-top-btn" title="回到顶部">↑</button>
+
+    <!-- 新增：悬浮错题导航抽屉（左下角） -->
+    <div id="floating-nav-container">
+        <button id="floating-nav-toggle">
+            错题导航
+            <span id="floating-nav-badge">0</span>
+        </button>
+        <div id="floating-nav-panel">
+            <div class="panel-header">选择模组跳转</div>
+            <div id="floating-nav-list">
+                <!-- 动态生成的错题模组链接将插入到这里 -->
+            </div>
         </div>
     </div>
 

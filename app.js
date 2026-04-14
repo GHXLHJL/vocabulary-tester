@@ -7,10 +7,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const summaryCorrect = document.getElementById('summary-correct');
     const summaryIncorrect = document.getElementById('summary-incorrect');
     const summaryAccuracy = document.getElementById('summary-accuracy');
-    const errorModulesContainer = document.getElementById('error-modules-container');
-    const errorModulesList = document.getElementById('error-modules-list');
+    const filterErrorsContainer = document.getElementById('filter-errors-container');
+    const toggleErrorsBtn = document.getElementById('toggle-errors-btn');
+    const backToTopBtn = document.getElementById('back-to-top-btn');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v9';
+    // 悬浮错题导航相关 DOM
+    const floatingNavContainer = document.getElementById('floating-nav-container');
+    const floatingNavToggle = document.getElementById('floating-nav-toggle');
+    const floatingNavBadge = document.getElementById('floating-nav-badge');
+    const floatingNavPanel = document.getElementById('floating-nav-panel');
+    const floatingNavList = document.getElementById('floating-nav-list');
+
+    const STORAGE_KEY = 'vocabulary_tester_data_v11';
 
     // 预置部分初始词库
     const defaultWords = [
@@ -236,20 +244,18 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 55, word: 'astonish', expectedAnswer: '使吃惊', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 55, word: 'abolish', expectedAnswer: '废止', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 55, word: 'foolish', expectedAnswer: '愚蠢的', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 56, word: 'avert', expectedAnswer: '防止', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 56, word: 'overt', expectedAnswer: '公开的', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 56, word: 'invert', expectedAnswer: '颠倒', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 57, word: 'consensus', expectedAnswer: '共识', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 57, word: 'census', expectedAnswer: '官方统计', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 57, word: 'versus', expectedAnswer: '以...为对手', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 58, word: 'aid', expectedAnswer: '援助', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 58, word: 'lid', expectedAnswer: '盖子', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 58, word: 'bid', expectedAnswer: '出价', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 58, word: 'hid(hide)', expectedAnswer: '躲藏', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 58, word: 'rid', expectedAnswer: '摆脱', userAnswer: '', isCorrect: null }
+        { id: generateId(), group: 56, word: 'consensus', expectedAnswer: '共识', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 56, word: 'census', expectedAnswer: '官方统计', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 56, word: 'versus', expectedAnswer: '以...为对手', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 57, word: 'aid', expectedAnswer: '援助', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 57, word: 'lid', expectedAnswer: '盖子', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 57, word: 'bid', expectedAnswer: '出价', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 57, word: 'hid(hide)', expectedAnswer: '躲藏', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 57, word: 'rid', expectedAnswer: '摆脱', userAnswer: '', isCorrect: null }
     ];
 
     let words = [];
+    let isShowingOnlyErrors = false; // 记录当前是否处于“只看错题”模式
 
     // 生成唯一 ID
     function generateId() {
@@ -276,30 +282,54 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderTable() {
         wordTbody.innerHTML = '';
         let lastGroup = null;
+        let currentGroupTr = null;
+        let hasErrorInCurrentGroup = false;
+
         words.forEach((wordObj, index) => {
-            // 如果存在 group 属性且与上一个不同，则插入带有模组名称的分隔行
+            // 在“只看错题”模式下，跳过正确的题目
+            if (isShowingOnlyErrors && wordObj.isCorrect === true) {
+                return;
+            }
+
+            // 如果存在 group 属性且与上一个不同，则准备插入新的模组分隔行
             if (wordObj.group !== undefined && wordObj.group !== lastGroup) {
-                const separatorTr = document.createElement('tr');
-                separatorTr.className = 'group-separator';
-                separatorTr.id = `module-${wordObj.group}`; // 添加锚点 ID，方便跳转
+                // 如果上一个模组在“只看错题”模式下没有错题，则将其隐藏
+                if (isShowingOnlyErrors && currentGroupTr && !hasErrorInCurrentGroup) {
+                    currentGroupTr.style.display = 'none';
+                }
+
+                currentGroupTr = document.createElement('tr');
+                currentGroupTr.className = 'group-separator';
+                currentGroupTr.id = `module-${wordObj.group}`;
 
                 const separatorTd = document.createElement('td');
                 separatorTd.colSpan = 3;
 
-                // 在分隔行中显示模组编号或名称
                 const groupLabel = document.createElement('div');
                 groupLabel.className = 'group-label';
                 groupLabel.textContent = `▶ 模组: ${wordObj.group}`;
                 separatorTd.appendChild(groupLabel);
 
-                separatorTr.appendChild(separatorTd);
-                wordTbody.appendChild(separatorTr);
+                currentGroupTr.appendChild(separatorTd);
+                wordTbody.appendChild(currentGroupTr);
+
+                lastGroup = wordObj.group;
+                hasErrorInCurrentGroup = false; // 重置当前模组的错题标记
             }
-            lastGroup = wordObj.group;
+
+            // 检查当前题目是否为错题（错误或未作答）
+            if (wordObj.isCorrect === false) {
+                hasErrorInCurrentGroup = true;
+            }
 
             const tr = createRow(wordObj, index);
             wordTbody.appendChild(tr);
         });
+
+        // 循环结束后，处理最后一个模组的分隔行显示状态
+        if (isShowingOnlyErrors && currentGroupTr && !hasErrorInCurrentGroup) {
+            currentGroupTr.style.display = 'none';
+        }
     }
 
     // 创建单行表格内容
@@ -427,12 +457,21 @@ document.addEventListener('DOMContentLoaded', () => {
             summaryIncorrect.textContent = incorrectCount;
             summaryAccuracy.textContent = accuracy + '%';
 
-            // 渲染错题模组跳转按钮
-            if (errorGroups.size > 0) {
-                errorModulesContainer.style.display = 'block';
-                errorModulesList.innerHTML = '';
+            // 渲染“只看错题”切换按钮
+            if (incorrectCount > 0) {
+                filterErrorsContainer.style.display = 'block';
+            } else {
+                filterErrorsContainer.style.display = 'none';
+                isShowingOnlyErrors = false; // 如果全对，强制重置状态
+                updateToggleButtonUI();
+            }
 
-                // 将模组编号排序后生成按钮
+            // ==== 渲染悬浮错题导航 ====
+            if (errorGroups.size > 0) {
+                floatingNavContainer.style.display = 'block';
+                floatingNavBadge.textContent = errorGroups.size;
+                floatingNavList.innerHTML = '';
+
                 const sortedGroups = Array.from(errorGroups).sort((a, b) => a - b);
                 sortedGroups.forEach(group => {
                     const link = document.createElement('a');
@@ -440,24 +479,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     link.className = 'error-module-link';
                     link.textContent = `模组 ${group}`;
 
-                    // 绑定点击事件，实现平滑滚动
+                    // 点击导航项实现平滑跳转，并收起面板
                     link.addEventListener('click', (e) => {
                         e.preventDefault();
                         const targetModule = document.getElementById(`module-${group}`);
                         if (targetModule) {
-                            targetModule.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            // 添加一个短暂的闪烁提示效果
+                            // 稍微偏移一点以防被顶部或导航遮挡
+                            const yOffset = -20;
+                            const y = targetModule.getBoundingClientRect().top + window.scrollY + yOffset;
+                            window.scrollTo({ top: y, behavior: 'smooth' });
+
+                            // 高亮提示
                             targetModule.style.backgroundColor = '#fff3cd';
                             setTimeout(() => {
                                 targetModule.style.backgroundColor = '';
                             }, 1000);
+
+                            // 跳转后自动收起面板
+                            floatingNavPanel.classList.remove('open');
                         }
                     });
 
-                    errorModulesList.appendChild(link);
+                    floatingNavList.appendChild(link);
                 });
             } else {
-                errorModulesContainer.style.display = 'none';
+                floatingNavContainer.style.display = 'none';
+                floatingNavPanel.classList.remove('open');
             }
 
             testSummary.style.display = 'block';
@@ -480,8 +527,60 @@ document.addEventListener('DOMContentLoaded', () => {
             saveData();
             renderTable();
             testSummary.style.display = 'none';
-            errorModulesContainer.style.display = 'none'; // 重置时隐藏错题跳转区
+            filterErrorsContainer.style.display = 'none';
+            floatingNavContainer.style.display = 'none'; // 隐藏悬浮导航
+            floatingNavPanel.classList.remove('open');
+            isShowingOnlyErrors = false; // 重置时恢复全部显示
+            updateToggleButtonUI();
         }
+    });
+
+    // “只看错题” 按钮点击事件
+    toggleErrorsBtn.addEventListener('click', () => {
+        isShowingOnlyErrors = !isShowingOnlyErrors;
+        updateToggleButtonUI();
+        renderTable(); // 重新渲染表格，应用过滤逻辑
+    });
+
+    // 悬浮导航按钮点击事件：展开/收起错题列表
+    floatingNavToggle.addEventListener('click', () => {
+        floatingNavPanel.classList.toggle('open');
+    });
+
+    // 点击页面其他地方自动收起悬浮导航面板
+    document.addEventListener('click', (e) => {
+        if (!floatingNavContainer.contains(e.target) && floatingNavPanel.classList.contains('open')) {
+            floatingNavPanel.classList.remove('open');
+        }
+    });
+
+    // 更新切换按钮的样式和文字
+    function updateToggleButtonUI() {
+        if (isShowingOnlyErrors) {
+            toggleErrorsBtn.textContent = '显示全部单词';
+            toggleErrorsBtn.style.backgroundColor = '#6c757d'; // 灰色
+        } else {
+            toggleErrorsBtn.textContent = '只看错题';
+            toggleErrorsBtn.style.backgroundColor = '#ff4757'; // 红色
+        }
+    }
+
+    // ==== 悬浮回到顶部功能 ====
+    // 监听滚动事件，当向下滚动超过 300px 时显示按钮
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 300) {
+            backToTopBtn.style.display = 'block';
+        } else {
+            backToTopBtn.style.display = 'none';
+        }
+    });
+
+    // 点击按钮平滑滚动到顶部
+    backToTopBtn.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
     });
 
     // 初始化页面
