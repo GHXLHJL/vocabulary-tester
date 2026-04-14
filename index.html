@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词自测工具</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>单词自测工具</h1>
+
+        <div class="add-word-section">
+            <h2>添加新单词</h2>
+            <form id="add-word-form">
+                <input type="text" id="new-word" placeholder="英文单词" required>
+                <input type="text" id="new-meaning" placeholder="正确中文释义" required>
+                <button type="submit">添加单词</button>
+            </form>
+        </div>
+
+        <div class="tester-section">
+            <div class="tester-header"
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 style="margin: 0;">自测列表</h2>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <button id="submit-test-btn"
+                        style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">提交检测</button>
+                </div>
+            </div>
+
+            <!-- 本地成绩统计汇总区 -->
+            <div id="test-summary"
+                style="display: none; background-color: #e9ecef; padding: 15px; border-radius: 6px; margin-bottom: 15px; text-align: center;">
+                <h3 style="margin-top: 0; color: #2c3e50;">📊 本次检测成绩</h3>
+                <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px;">
+                    <div style="font-size: 16px;">总答题数: <strong id="summary-total"
+                            style="color: #333; font-size: 20px;">0</strong></div>
+                    <div style="font-size: 16px;">答对: <strong id="summary-correct"
+                            style="color: #28a745; font-size: 20px;">0</strong></div>
+                    <div style="font-size: 16px;">答错: <strong id="summary-incorrect"
+                            style="color: #dc3545; font-size: 20px;">0</strong></div>
+                    <div style="font-size: 16px;">准确率: <strong id="summary-accuracy"
+                            style="color: #007bff; font-size: 20px;">0%</strong></div>
+                </div>
+            </div>
+            <table id="word-table">
+                <thead>
+                    <tr>
+                        <th>英文单词</th>
+                        <th>你的答案</th>
+                        <th>检测结果</th>
+                    </tr>
+                </thead>
+                <tbody id="word-tbody">
+                    <!-- 动态渲染的单词行将插入到这里 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
