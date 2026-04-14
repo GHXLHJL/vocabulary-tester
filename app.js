@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const summaryIncorrect = document.getElementById('summary-incorrect');
     const summaryAccuracy = document.getElementById('summary-accuracy');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v7';
+    const STORAGE_KEY = 'vocabulary_tester_data_v8';
 
     // 预置部分初始词库
     const defaultWords = [
@@ -305,6 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 【英文单词】列
         const tdWord = document.createElement('td');
+        tdWord.className = 'word-cell';
         tdWord.textContent = wordObj.word;
         tr.appendChild(tdWord);
 
