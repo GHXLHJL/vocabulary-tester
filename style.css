@@ -174,6 +174,10 @@ td input[type="text"]:focus {
     font-weight: bold;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     transition: background-color 0.3s, transform 0.3s;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    -webkit-tap-highlight-color: transparent;
 }
 
 #back-to-top-btn:hover {
@@ -205,6 +209,8 @@ td input[type="text"]:focus {
     align-items: center;
     gap: 8px;
     transition: transform 0.2s, background-color 0.2s;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
 }
 
 #floating-nav-toggle:hover {
@@ -226,7 +232,7 @@ td input[type="text"]:focus {
     position: absolute;
     bottom: 60px;
     left: 0;
-    width: 280px;
+    width: min(280px, calc(100vw - 24px));
     max-height: 350px;
     background-color: white;
     border-radius: 8px;
@@ -275,10 +281,37 @@ td input[type="text"]:focus {
 
     #back-to-top-btn {
         bottom: 20px;
-        right: 20px;
-        width: 45px;
-        height: 45px;
+        right: 12px;
+        width: 44px;
+        height: 44px;
         font-size: 20px;
+        display: none;
+    }
+
+    #floating-nav-container {
+        bottom: 20px;
+        left: 12px;
+        max-width: calc(100vw - 68px);
+    }
+
+    #floating-nav-toggle {
+        padding: 10px 14px;
+        font-size: 14px;
+        border-radius: 24px;
+        max-width: calc(100vw - 68px);
+    }
+
+    #floating-nav-badge {
+        padding: 2px 7px;
+        font-size: 11px;
+    }
+
+    #floating-nav-panel {
+        bottom: 56px;
+        left: 0;
+        width: min(240px, calc(100vw - 24px));
+        max-height: 45vh;
+        padding: 12px;
     }
 
     .container {

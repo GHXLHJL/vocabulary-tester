@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingNavPanel = document.getElementById('floating-nav-panel');
     const floatingNavList = document.getElementById('floating-nav-list');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v12';
+    const STORAGE_KEY = 'vocabulary_tester_data_v13';
 
     // 预置部分初始词库
     const defaultWords = [
@@ -262,13 +262,40 @@ document.addEventListener('DOMContentLoaded', () => {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
 
+    function createDefaultWords() {
+        return defaultWords.map(word => ({ ...word }));
+    }
+
+    function isValidStoredWords(data) {
+        return Array.isArray(data) && data.every(word =>
+            word &&
+            typeof word.word === 'string' &&
+            typeof word.expectedAnswer === 'string' &&
+            Object.prototype.hasOwnProperty.call(word, 'userAnswer') &&
+            Object.prototype.hasOwnProperty.call(word, 'isCorrect')
+        );
+    }
+
     // 从 LocalStorage 加载数据
     function loadData() {
         const data = localStorage.getItem(STORAGE_KEY);
-        if (data) {
-            words = JSON.parse(data);
-        } else {
-            words = [...defaultWords];
+        if (!data) {
+            words = createDefaultWords();
+            saveData();
+            return;
+        }
+
+        try {
+            const parsedData = JSON.parse(data);
+            if (isValidStoredWords(parsedData)) {
+                words = parsedData;
+            } else {
+                words = createDefaultWords();
+                saveData();
+            }
+        } catch (error) {
+            console.warn('本地缓存数据损坏，已自动恢复默认词库。', error);
+            words = createDefaultWords();
             saveData();
         }
     }
