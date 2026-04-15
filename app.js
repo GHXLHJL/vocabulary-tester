@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingNavList = document.getElementById('floating-nav-list');
     const floatingNavOverlay = document.getElementById('floating-nav-overlay');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v22';
+    const STORAGE_KEY = 'vocabulary_tester_data_v23';
 
     // 预置部分初始词库
     const defaultWords = [
