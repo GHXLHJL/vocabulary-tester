@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingNavList = document.getElementById('floating-nav-list');
     const floatingNavOverlay = document.getElementById('floating-nav-overlay');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v18';
+    const STORAGE_KEY = 'vocabulary_tester_data_v19';
 
     // 预置部分初始词库
     const defaultWords = [
@@ -252,7 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 57, word: 'lid', expectedAnswer: '盖子', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 57, word: 'bid', expectedAnswer: '出价', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 57, word: 'hid(hide)', expectedAnswer: '躲藏', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 57, word: 'rid', expectedAnswer: '摆脱', userAnswer: '', isCorrect: null }
+        { id: generateId(), group: 57, word: 'rid', expectedAnswer: '摆脱', userAnswer: '', isCorrect: null },
+
     ];
 
     let words = [];

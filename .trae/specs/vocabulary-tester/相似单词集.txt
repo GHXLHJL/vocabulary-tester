@@ -1,5 +1,4 @@
 相似单词集
-——————————————
 ascribe 将…归因于/认为…具有
 prescribe 开药
 subscribe 订阅/同意
@@ -276,10 +275,6 @@ polish 擦亮
 astonish 使吃惊
 abolish 废止
 foolish 愚蠢的
-
-avert 防止
-overt 公开的
-invert 颠倒
 
 consensus 共识
 census 官方统计
