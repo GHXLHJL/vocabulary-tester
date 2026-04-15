@@ -16,7 +16,7 @@ if (arg1 === '--update-version') {
         return `const STORAGE_KEY = 'vocabulary_tester_data_v${currentVersion}';`;
     });
     fs.writeFileSync(appJsPath, content, 'utf-8');
-    console.log(`[成功] 强制刷新用户缓存，本地存储版本号已自动更新至 v${currentVersion}`);
+    console.log(`[OK] Updated storage version to v${currentVersion}`);
 } else if (arg1 && arg2) {
     const newWord = arg1;
     const newMeaning = arg2;
@@ -26,5 +26,5 @@ if (arg1 === '--update-version') {
     content = content.replace(/(isCorrect:\s*null\s*\}\s*)\n\s*\];/, `$1,\n        { id: generateId(), group: ${groupName}, word: '${newWord.replace(/'/g, "\\'")}', expectedAnswer: '${newMeaning.replace(/'/g, "\\'")}', userAnswer: '', isCorrect: null }\n    ];`);
 
     fs.writeFileSync(appJsPath, content, 'utf-8');
-    console.log(`[成功] 已将单词加入底层代码词库: [${arg3 || '最新添加'}] ${newWord} -> ${newMeaning}`);
+    console.log(`[OK] Added word to app.js: [${arg3 || 'latest'}] ${newWord} -> ${newMeaning}`);
 }

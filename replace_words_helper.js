@@ -36,7 +36,7 @@ try {
     });
 
     if (newWordsCode === '') {
-         console.log("❌ 错误：在 txt 文件中没有解析到任何单词！请检查格式（单词和释义用空格隔开）。");
+         console.log("[ERROR] No valid words were parsed from txt. Check that each line uses: word meaning");
          process.exit(1);
     }
 
@@ -50,9 +50,9 @@ try {
     
     if (regexWords.test(appJsContent)) {
         appJsContent = appJsContent.replace(regexWords, `$1${newWordsCode}$2`);
-        console.log("✅ 成功替换 app.js 中的默认词库。");
+        console.log("[OK] Replaced defaultWords in app.js.");
     } else {
-        console.log("❌ 错误：无法在 app.js 中找到 defaultWords 数组。");
+        console.log("[ERROR] Could not find defaultWords array in app.js.");
         process.exit(1);
     }
 
@@ -60,14 +60,14 @@ try {
     const regexVersion = /(const\s+STORAGE_KEY\s*=\s*'vocabulary_tester_data_v)(\d+)(';)/;
     appJsContent = appJsContent.replace(regexVersion, (match, p1, p2, p3) => {
         const newVersion = parseInt(p2, 10) + 1;
-        console.log(`✅ 成功更新本地缓存版本号：v${p2} -> v${newVersion}`);
+        console.log(`[OK] Updated storage version: v${p2} -> v${newVersion}`);
         return `${p1}${newVersion}${p3}`;
     });
 
     // 写回 app.js
     fs.writeFileSync(appJsPath, appJsContent, 'utf8');
-    console.log("🎉 替换全套单词库操作完成！");
+    console.log("[DONE] Full word set replacement completed.");
 
 } catch (error) {
-    console.error("❌ 发生错误：", error);
+    console.error("[ERROR]", error);
 }
