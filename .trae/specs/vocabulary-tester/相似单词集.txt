@@ -4,6 +4,59 @@ prescribe 开药
 subscribe 订阅/同意
 describe 描述
 
+cardinal 最重要的
+cordial 热情友好的
+
+week 星期
+weed 杂草
+weep 流出/哭泣
+sweep 扫过/迅速传播
+wipe 擦
+wife 妻子
+whip 党鞭/鞭子
+
+ventilate  使通风
+versatile 多才多艺的
+volatile 易发挥的/易变的
+
+gratitude 感谢
+attitude 态度
+altitude 高度
+latitude 纬度/自由
+longitude 经度
+aptitude 天赋
+
+talent  才能/天才
+latent  潜伏的
+patent  专利/专利权
+tenant  租户/佃户
+lantern  灯笼
+lateral  侧面的
+
+vote 投票
+veto 否决
+
+row 争吵/一排
+raw 未经加工的
+law 法则
+paw 爪子
+jaw 下巴
+saw 锯
+sew 缝制
+sow 播种
+
+driff 移动/漂流
+draff 草稿/草拟（的）
+thrift 节俭
+
+quota 配额
+quote 引用
+
+parade 游行
+paradox 悖论
+paralyse 使瘫痪
+paradise 天堂
+
 alter 改变
 alert 警惕（的）
 avert 防止
@@ -21,6 +74,7 @@ philosophical 哲学的
 erupt 爆发
 abrupt 突然的
 disrupt 使干扰
+corrupt 腐败（的）
 
 sentiment 观点/情绪
 sensible 明智的
@@ -112,7 +166,7 @@ mount 发起
 amount 数量
 account 账户
 
-literacy 读写能力
+literacy 读写能力/专业能力
 literal 字面上的
 literary 文学的
 liberal 开放的
@@ -148,8 +202,21 @@ instinct 本能
 attempt 尝试
 contempt 鄙视
 tempt 引诱
+temptation 诱惑
 temple 寺院
+template 模版
+contemplate 思考
+tempo 节奏
+temporal 短暂的
+temporary 暂时的
 hamper 阻碍
+
+cape 披风
+cap 帽子
+cope 处理
+cop 警察
+rap 说唱/敲击
+rape 强奸/抢夺
 
 lapse 疏忽
 elapse 流逝
@@ -179,6 +246,7 @@ speculate 推测
 spectrum 光谱/范围
 spectacle 景象/眼镜
 
+impel 促使
 repel 驱逐
 rebel 反抗
 
@@ -218,7 +286,7 @@ institute 机构
 constitute 构成
 
 dense 密集的
-sense 感官
+sense 感觉
 tense 紧张的
 tease 戏弄
 
@@ -247,7 +315,7 @@ compliment 称赞
 trail 追踪
 trial 试验
 
-state 状况
+state 国家/状况
 statue 雕塑
 status 地位
 statute 法令
