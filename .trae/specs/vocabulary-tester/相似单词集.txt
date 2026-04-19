@@ -10,6 +10,53 @@ mental 精神（健康）的
 metal 金属
 medal 奖章
 
+evolution 进化
+resolution 决定
+revelation 揭露
+revolution 革命
+
+formal 形式的，正规的
+formality 例行公事
+format 格式(化)
+formative 影响形成的
+former 以前的/前者（的）
+formula 方案/配方
+formulate 制定
+
+trip 旅行
+trap 困住/陷阱
+strap 捆绑
+strip 剥夺
+stripe 条纹
+spite 怨恨
+spit 吐（口水）
+
+confide 透露
+confidence 信心
+confident 自信的
+confidant 知己
+
+tramp 远足/流浪汉
+damp 潮湿的
+dump 倾销/垃圾场
+jump 跳跃
+bump 撞上
+pump 抽水（机）
+lump 把…混为一谈/肿块
+
+bravery 勇敢
+gravity 重力
+brevity 简洁
+
+fate 命运
+fade 逐渐消失
+fame 声誉
+feat 功绩
+feast 盛宴
+fake 假的/赝品
+
+scare 害怕
+scarce 缺乏的
 score 分数
 scorn 蔑视
 corn 玉米
@@ -21,8 +68,12 @@ scar 伤痕
 stationary 静止的
 stationery 文具
 
+fuse 融合/保险丝
 confuse 迷惑
+effuse 流出
 refuse 拒绝
+refute 反驳
+defuse 使缓和
 infuse 注入
 diffuse 传播（的）
 transfuse 输（血）
@@ -121,6 +172,8 @@ erupt 爆发
 abrupt 突然的
 disrupt 使干扰
 corrupt 腐败（的）
+interrupt 打断
+bankrupt 破产的
 
 sentiment 观点/情绪
 sensible 明智的
@@ -162,9 +215,16 @@ process 过程/处理
 progress 进步/进展
 congress 国会/代表大会
 
+deform 使畸形
+inform 通知
+perform 表现
+uniform 制服/统一的
+conform 遵守/相一致
 inform 通知/影响
 reform 改革
-conform 遵守/相一致
+reformation 革新
+reformer 改革者
+reformatory 改革的
 
 confer 授予
 infer 推断
@@ -362,6 +422,15 @@ refine 提炼
 ascend 上升
 descend 下降
 transcend 超出
+transition 过渡
+transaction 交易
+transparent 明显的/透明的
+transient 短暂的
+transmission 传输
+translate 转变/翻译
+transform 改变
+transport 运输/交通方式
+transplant 移植/移居
 
 assist 帮助
 persist 坚持
@@ -382,6 +451,7 @@ statue 雕塑
 status 地位
 statute 法令
 stature 身材
+saturate 浸透
 
 humble 谦逊的
 tumble 跌到
@@ -415,6 +485,3 @@ lid 盖子
 bid 出价
 hid(hide) 躲藏
 rid 摆脱
-
-
-
