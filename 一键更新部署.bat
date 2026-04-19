@@ -38,7 +38,15 @@ echo.
 set "commit_msg="
 set /p commit_msg=Enter commit message (press Enter for default): 
 if "!commit_msg!"=="" (
-    set "commit_msg=replace full word set"
+    for /f "tokens=2 delims='" %%v in ('findstr /c:"const STORAGE_KEY = 'vocabulary_tester_data_" app.js') do (
+        set "storage_key=%%v"
+    )
+    set "version=!storage_key:vocabulary_tester_data_=!"
+    if defined version (
+        set "commit_msg=update to !version!"
+    ) else (
+        set "commit_msg=update word set"
+    )
 )
 
 echo.

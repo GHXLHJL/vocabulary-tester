@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingNavOverlay = document.getElementById('floating-nav-overlay');
     const appVersionDisplay = document.getElementById('app-version-display');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v26.4.27';
+    const STORAGE_KEY = 'vocabulary_tester_data_v26.4.28';
 
     // 在左上角显示当前版本号
     if (appVersionDisplay) {
@@ -380,6 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
     ];
 
     let words = [];
@@ -421,16 +422,25 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     }
 
+    let storageUnavailableNotified = false;
+
+    function warnStorageUnavailable(error) {
+        if (!storageUnavailableNotified) {
+            console.warn('本地缓存不可用，当前将使用临时内存模式。关闭页面后数据不会保留。', error);
+            storageUnavailableNotified = true;
+        }
+    }
+
     // 从 LocalStorage 加载数据
     function loadData() {
-        const data = localStorage.getItem(STORAGE_KEY);
-        if (!data) {
-            words = createDefaultWords();
-            saveData();
-            return;
-        }
-
         try {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (!data) {
+                words = createDefaultWords();
+                saveData();
+                return;
+            }
+
             const parsedData = JSON.parse(data);
             if (isValidStoredWords(parsedData)) {
                 words = parsedData;
@@ -439,7 +449,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveData();
             }
         } catch (error) {
-            console.warn('本地缓存数据损坏，已自动恢复默认词库。', error);
+            const isStorageAccessError =
+                error && (
+                    error.name === 'SecurityError' ||
+                    error.name === 'QuotaExceededError'
+                );
+
+            if (isStorageAccessError) {
+                warnStorageUnavailable(error);
+            } else {
+                console.warn('本地缓存数据损坏，已自动恢复默认词库。', error);
+            }
+
             words = createDefaultWords();
             saveData();
         }
@@ -447,7 +468,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 保存数据到 LocalStorage
     function saveData() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
+        } catch (error) {
+            warnStorageUnavailable(error);
+        }
     }
 
     // 渲染表格内容
@@ -573,15 +598,38 @@ document.addEventListener('DOMContentLoaded', () => {
         updateResultCell(tdResult, wordObj);
     }
 
-    // 清洗字符串：移除括号及其中内容，移除所有非中文字符（如标点符号等）
-    function cleanString(str) {
+    // 统一清洗字符串，但保留括号内的正文字符，只去掉括号和标点
+    function normalizeAnswerString(str) {
         if (!str) return '';
-        // 移除中文括号和英文括号及其内部的内容
-        let cleaned = str.replace(/（.*?）/g, '').replace(/\(.*?\)/g, '');
-        // 移除所有非中文字符、非英文字母数字（相当于去除了标点符号、空格等）
-        // 这样可以实现最大的宽松度匹配
-        cleaned = cleaned.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '');
-        return cleaned;
+        return str.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '');
+    }
+
+    // 将“传播（的）”展开为“传播”和“传播的”这类可接受答案
+    function expandOptionalAnswerVariants(str) {
+        const optionalPattern = /([（(])([^（）()]+)([）)])/;
+        const match = str.match(optionalPattern);
+
+        if (!match) {
+            return [normalizeAnswerString(str)];
+        }
+
+        const [fullMatch, , optionalText] = match;
+        const withoutOptional = str.replace(fullMatch, '');
+        const withOptional = str.replace(fullMatch, optionalText);
+
+        return [
+            ...expandOptionalAnswerVariants(withoutOptional),
+            ...expandOptionalAnswerVariants(withOptional)
+        ];
+    }
+
+    function getPossibleAnswers(expectedAnswer) {
+        return [...new Set(
+            expectedAnswer
+                .split('/')
+                .flatMap(ans => expandOptionalAnswerVariants(ans))
+                .filter(Boolean)
+        )];
     }
 
     // 提交检测所有单词
@@ -598,10 +646,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 wordObj.isCorrect = false; // 未作答直接算作错误
             } else {
                 // 清洗用户输入
-                const cleanedUserAns = cleanString(userAns);
+                const cleanedUserAns = normalizeAnswerString(userAns);
 
-                // 获取所有可能的正确答案，并分别清洗
-                const possibleAnswers = wordObj.expectedAnswer.split('/').map(ans => cleanString(ans));
+                // 展开括号可选内容后的所有合法答案
+                const possibleAnswers = getPossibleAnswers(wordObj.expectedAnswer);
 
                 // 只要清洗后的用户输入匹配任何一个清洗后的正确答案即为正确
                 wordObj.isCorrect = possibleAnswers.some(ans => ans === cleanedUserAns);

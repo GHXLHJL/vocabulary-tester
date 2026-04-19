@@ -4,6 +4,7 @@ const path = require('path');
 // 1. 读取相似单词集.txt
 const txtPath = path.join(__dirname, '.trae', 'specs', 'vocabulary-tester', '相似单词集.txt');
 const appJsPath = path.join(__dirname, 'app.js');
+const indexHtmlPath = path.join(__dirname, 'index.html');
 
 function getNextVersion(currentVersion) {
     const now = new Date();
@@ -75,15 +76,37 @@ try {
     }
 
     // 4. 自动更新 STORAGE_KEY 的版本号，格式为 v年.月.序号
+    let updatedVersion = null;
     const regexVersion = /(const\s+STORAGE_KEY\s*=\s*'vocabulary_tester_data_)(v[^']+)(';)/;
     appJsContent = appJsContent.replace(regexVersion, (match, p1, p2, p3) => {
         const newVersion = getNextVersion(p2);
+        updatedVersion = newVersion;
         console.log(`[OK] Updated storage version: ${p2} -> ${newVersion}`);
         return `${p1}${newVersion}${p3}`;
     });
 
     // 写回 app.js
     fs.writeFileSync(appJsPath, appJsContent, 'utf8');
+
+    // 5. 同步更新前端资源的缓存版本号
+    if (updatedVersion && fs.existsSync(indexHtmlPath)) {
+        let indexHtmlContent = fs.readFileSync(indexHtmlPath, 'utf8');
+        const assetVersion = updatedVersion.replace(/^v/, '');
+
+        indexHtmlContent = indexHtmlContent.replace(
+            /(<link\s+rel="stylesheet"\s+href="style\.css\?v=)[^"]+(")/,
+            `$1${assetVersion}$2`
+        );
+
+        indexHtmlContent = indexHtmlContent.replace(
+            /(<script\s+src="app\.js\?v=)[^"]+("><\/script>)/,
+            `$1${assetVersion}$2`
+        );
+
+        fs.writeFileSync(indexHtmlPath, indexHtmlContent, 'utf8');
+        console.log(`[OK] Synced asset version in index.html to ${assetVersion}`);
+    }
+
     console.log("[DONE] Full word set replacement completed.");
 
 } catch (error) {
