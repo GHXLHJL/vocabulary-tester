@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>小七哥单词自测工具</title>
-    <link rel="stylesheet" href="style.css?v=26.4.30">
+    <link rel="stylesheet" href="style.css?v=26.4.31">
 </head>
 
 <body>
@@ -46,22 +46,14 @@
                     <div style="font-size: 16px;">准确率: <strong id="summary-accuracy"
                             style="color: #007bff; font-size: 20px;">0%</strong></div>
                 </div>
-                <!-- 新增：只看错题切换按钮区 -->
-                <div id="filter-errors-container"
-                    style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc;">
-                    <button id="toggle-errors-btn"
-                        style="padding: 10px 25px; background-color: #ff4757; color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 15px; font-weight: bold; box-shadow: 0 2px 5px rgba(255, 71, 87, 0.3); transition: background-color 0.2s;">
-                        只看错题
-                    </button>
-                </div>
+
             </div>
             <table id="word-table">
                 <thead>
                     <tr>
                         <th>英文单词</th>
                         <th>你的答案</th>
-                        <th>检测结果</th>
-                        <th class="meaning-col" style="display: none;">中文释义</th>
+                        <th class="meaning-col">中文释义</th>
                     </tr>
                 </thead>
                 <tbody id="word-tbody">
@@ -90,7 +82,7 @@
 
     <div id="floating-nav-overlay"></div>
 
-    <script src="app.js?v=26.4.30"></script>
+    <script src="app.js?v=26.4.31"></script>
 </body>
 
 </html>

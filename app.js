@@ -7,8 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const summaryCorrect = document.getElementById('summary-correct');
     const summaryIncorrect = document.getElementById('summary-incorrect');
     const summaryAccuracy = document.getElementById('summary-accuracy');
-    const filterErrorsContainer = document.getElementById('filter-errors-container');
-    const toggleErrorsBtn = document.getElementById('toggle-errors-btn');
     const backToTopBtn = document.getElementById('back-to-top-btn');
 
     // 悬浮错题导航相关 DOM
@@ -20,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingNavOverlay = document.getElementById('floating-nav-overlay');
     const appVersionDisplay = document.getElementById('app-version-display');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v26.4.30';
+    const STORAGE_KEY = 'vocabulary_tester_data_v26.4.31';
 
     // 在左上角显示当前版本号
     if (appVersionDisplay) {
@@ -446,10 +444,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
     ];
 
     let words = [];
-    let isShowingOnlyErrors = false; // 记录当前是否处于“只看错题”模式
 
     function setBackToTopVisible(isVisible) {
         backToTopBtn.classList.toggle('is-visible', isVisible);
@@ -544,28 +542,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderTable() {
         wordTbody.innerHTML = '';
         let lastGroup = null;
-        let currentGroupTr = null;
-        let hasErrorInCurrentGroup = false;
 
         words.forEach((wordObj, index) => {
-            // 在“只看错题”模式下，跳过正确的题目
-            if (isShowingOnlyErrors && wordObj.isCorrect === true) {
-                return;
-            }
-
             // 如果存在 group 属性且与上一个不同，则准备插入新的模组分隔行
             if (wordObj.group !== undefined && wordObj.group !== lastGroup) {
-                // 如果上一个模组在“只看错题”模式下没有错题，则将其隐藏
-                if (isShowingOnlyErrors && currentGroupTr && !hasErrorInCurrentGroup) {
-                    currentGroupTr.style.display = 'none';
-                }
-
-                currentGroupTr = document.createElement('tr');
+                const currentGroupTr = document.createElement('tr');
                 currentGroupTr.className = 'group-separator';
                 currentGroupTr.id = `module-${wordObj.group}`;
 
                 const separatorTd = document.createElement('td');
-                separatorTd.colSpan = 4; // 更新跨列数以包含中文释义列
+                separatorTd.colSpan = 3; // 更新跨列数以匹配剩余的三列
 
                 const groupLabel = document.createElement('div');
                 groupLabel.className = 'group-label';
@@ -576,22 +562,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 wordTbody.appendChild(currentGroupTr);
 
                 lastGroup = wordObj.group;
-                hasErrorInCurrentGroup = false; // 重置当前模组的错题标记
-            }
-
-            // 检查当前题目是否为错题（错误或未作答）
-            if (wordObj.isCorrect === false) {
-                hasErrorInCurrentGroup = true;
             }
 
             const tr = createRow(wordObj, index);
             wordTbody.appendChild(tr);
         });
-
-        // 循环结束后，处理最后一个模组的分隔行显示状态
-        if (isShowingOnlyErrors && currentGroupTr && !hasErrorInCurrentGroup) {
-            currentGroupTr.style.display = 'none';
-        }
     }
 
     // 创建单行表格内容
@@ -620,20 +595,28 @@ document.addEventListener('DOMContentLoaded', () => {
         tdAnswer.appendChild(inputAnswer);
         tr.appendChild(tdAnswer);
 
-        // 【检测结果】列
-        const tdResult = document.createElement('td');
-        tdResult.className = 'result-cell';
-        updateResultCell(tdResult, wordObj);
-        tr.appendChild(tdResult);
-
-        // 【中文释义】列（默认隐藏，提交后显示）
+        // 【中文释义】列（默认隐藏意思内容，提交后显示）
         const tdMeaning = document.createElement('td');
         tdMeaning.className = 'meaning-col';
-        tdMeaning.style.display = 'none';
         tdMeaning.style.color = '#0056b3'; // 深蓝色，对比度更高，更清晰
         tdMeaning.style.fontSize = '16px'; // 字号加大一码
         tdMeaning.style.fontWeight = 'bold'; // 进一步加粗，提升可读性
-        tdMeaning.textContent = wordObj.expectedAnswer;
+
+        // 只有提交过检测才显示中文释义，并且让答案区域变成展示态
+        if (wordObj.isCorrect !== null) {
+            tdMeaning.textContent = wordObj.expectedAnswer;
+            inputAnswer.readOnly = true;
+            inputAnswer.tabIndex = -1;
+            inputAnswer.setAttribute('aria-readonly', 'true');
+            inputAnswer.placeholder = '';
+        } else {
+            tdMeaning.textContent = '';
+            inputAnswer.readOnly = false;
+            inputAnswer.removeAttribute('tabindex');
+            inputAnswer.removeAttribute('aria-readonly');
+            inputAnswer.placeholder = '输入中文释义...';
+        }
+
         tr.appendChild(tdMeaning);
 
         return tr;
@@ -649,17 +632,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 更新检测结果单元格的内容（✅ / ❌）
-    function updateResultCell(tdResult, wordObj) {
-        if (wordObj.isCorrect === true) {
-            tdResult.innerHTML = '<span class="result-correct">✅ 正确</span>';
-        } else if (wordObj.isCorrect === false) {
-            tdResult.innerHTML = '<span class="result-incorrect">❌ 错误</span>';
-        } else {
-            tdResult.innerHTML = '';
-        }
-    }
-
     // 处理用户输入，只保存不验证
     function handleAnswerInput(index, value, tr) {
         const wordObj = words[index];
@@ -669,8 +641,12 @@ document.addEventListener('DOMContentLoaded', () => {
         saveData(); // 实时保存用户的答题记录，但不判断正误
 
         updateRowAppearance(tr, wordObj);
-        const tdResult = tr.querySelector('.result-cell');
-        updateResultCell(tdResult, wordObj);
+
+        // 隐藏释义内容
+        const tdMeaning = tr.querySelector('.meaning-col');
+        if (tdMeaning) {
+            tdMeaning.textContent = '';
+        }
     }
 
     // 统一清洗字符串，但保留括号内的正文字符，只去掉括号和标点
@@ -752,15 +728,6 @@ document.addEventListener('DOMContentLoaded', () => {
             summaryIncorrect.textContent = incorrectCount;
             summaryAccuracy.textContent = accuracy + '%';
 
-            // 渲染“只看错题”切换按钮
-            if (incorrectCount > 0) {
-                filterErrorsContainer.style.display = 'block';
-            } else {
-                filterErrorsContainer.style.display = 'none';
-                isShowingOnlyErrors = false; // 如果全对，强制重置状态
-                updateToggleButtonUI();
-            }
-
             // ==== 渲染悬浮错题导航 ====
             if (errorGroups.size > 0) {
                 setFloatingNavVisible(true);
@@ -803,10 +770,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             testSummary.style.display = 'block';
 
-            // 显示所有中文释义列
-            const meaningCols = document.querySelectorAll('.meaning-col');
-            meaningCols.forEach(col => col.style.display = 'table-cell');
-
             // 滚动到成绩汇总区
             testSummary.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
@@ -825,22 +788,8 @@ document.addEventListener('DOMContentLoaded', () => {
             saveData();
             renderTable();
             testSummary.style.display = 'none';
-            filterErrorsContainer.style.display = 'none';
             setFloatingNavVisible(false);
-            isShowingOnlyErrors = false; // 重置时恢复全部显示
-            updateToggleButtonUI();
-
-            // 隐藏所有中文释义列
-            const meaningCols = document.querySelectorAll('.meaning-col');
-            meaningCols.forEach(col => col.style.display = 'none');
         }
-    });
-
-    // “只看错题” 按钮点击事件
-    toggleErrorsBtn.addEventListener('click', () => {
-        isShowingOnlyErrors = !isShowingOnlyErrors;
-        updateToggleButtonUI();
-        renderTable(); // 重新渲染表格，应用过滤逻辑
     });
 
     // 悬浮导航按钮点击事件：展开/收起错题列表
@@ -860,17 +809,6 @@ document.addEventListener('DOMContentLoaded', () => {
     floatingNavOverlay.addEventListener('click', () => {
         setFloatingNavOpen(false);
     });
-
-    // 更新切换按钮的样式和文字
-    function updateToggleButtonUI() {
-        if (isShowingOnlyErrors) {
-            toggleErrorsBtn.textContent = '显示全部单词';
-            toggleErrorsBtn.style.backgroundColor = '#6c757d'; // 灰色
-        } else {
-            toggleErrorsBtn.textContent = '只看错题';
-            toggleErrorsBtn.style.backgroundColor = '#ff4757'; // 红色
-        }
-    }
 
     // ==== 悬浮回到顶部功能 ====
     // 监听滚动事件，当向下滚动超过 300px 时显示按钮
