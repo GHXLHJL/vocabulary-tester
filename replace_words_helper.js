@@ -5,6 +5,24 @@ const path = require('path');
 const txtPath = path.join(__dirname, '.trae', 'specs', 'vocabulary-tester', '相似单词集.txt');
 const appJsPath = path.join(__dirname, 'app.js');
 
+function getNextVersion(currentVersion) {
+    const now = new Date();
+    const year = String(now.getFullYear()).slice(-2);
+    const month = String(now.getMonth() + 1);
+
+    const match = /^v(\d{2})\.(\d{1,2})\.(\d+)$/.exec(currentVersion);
+    if (!match) {
+        return `v${year}.${month}.1`;
+    }
+
+    const [, currentYear, currentMonth, currentCount] = match;
+    if (currentYear === year && currentMonth === month) {
+        return `v${year}.${month}.${parseInt(currentCount, 10) + 1}`;
+    }
+
+    return `v${year}.${month}.1`;
+}
+
 try {
     const txtContent = fs.readFileSync(txtPath, 'utf8');
 
@@ -56,11 +74,11 @@ try {
         process.exit(1);
     }
 
-    // 4. 自动更新 STORAGE_KEY 的版本号 (如 _v18 变成 _v19)
-    const regexVersion = /(const\s+STORAGE_KEY\s*=\s*'vocabulary_tester_data_v)(\d+)(';)/;
+    // 4. 自动更新 STORAGE_KEY 的版本号，格式为 v年.月.序号
+    const regexVersion = /(const\s+STORAGE_KEY\s*=\s*'vocabulary_tester_data_)(v[^']+)(';)/;
     appJsContent = appJsContent.replace(regexVersion, (match, p1, p2, p3) => {
-        const newVersion = parseInt(p2, 10) + 1;
-        console.log(`[OK] Updated storage version: v${p2} -> v${newVersion}`);
+        const newVersion = getNextVersion(p2);
+        console.log(`[OK] Updated storage version: ${p2} -> ${newVersion}`);
         return `${p1}${newVersion}${p3}`;
     });
 

@@ -18,8 +18,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingNavPanel = document.getElementById('floating-nav-panel');
     const floatingNavList = document.getElementById('floating-nav-list');
     const floatingNavOverlay = document.getElementById('floating-nav-overlay');
+    const appVersionDisplay = document.getElementById('app-version-display');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v26';
+    const STORAGE_KEY = 'vocabulary_tester_data_v26.4.27';
+
+    // 在左上角显示当前版本号
+    if (appVersionDisplay) {
+        const versionMatch = STORAGE_KEY.match(/_v([\d\.]+)$/);
+        if (versionMatch) {
+            appVersionDisplay.textContent = `Version: v${versionMatch[1]}`;
+        }
+    }
 
     // 预置部分初始词库
     const defaultWords = [
@@ -364,6 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 76, word: 'bid', expectedAnswer: '出价', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 76, word: 'hid(hide)', expectedAnswer: '躲藏', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 76, word: 'rid', expectedAnswer: '摆脱', userAnswer: '', isCorrect: null },
+
 
 
 
