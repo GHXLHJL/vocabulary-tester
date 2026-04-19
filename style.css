@@ -84,7 +84,7 @@ table {
 
 th,
 td {
-    border: 1px solid #ddd;
+    border: 1px solid #999; /* 加深边框颜色，原本是 #ddd */
     padding: 12px;
     text-align: left;
 }
@@ -93,6 +93,8 @@ th {
     background-color: #f8f9fa;
     font-weight: 600;
     color: #495057;
+    text-align: center;
+    /* 表头居中对齐 */
 }
 
 .word-cell {
@@ -100,6 +102,16 @@ th {
     font-size: 18px;
     font-weight: bold;
     color: #000;
+    width: 25%;
+}
+
+.meaning-col {
+    width: 25%;
+}
+
+td.meaning-col {
+    font-family: "STSong", "SimSun", "Songti SC", "Times New Roman", serif;
+    /* 仅对内容应用宋体 */
 }
 
 td input[type="text"] {
@@ -124,6 +136,12 @@ td input[type="text"]:focus {
 
 .incorrect {
     background-color: #f8d7da !important;
+}
+
+/* 覆盖错误和正确行的意思列背景色为白色，不受整行背景色影响 */
+.correct .meaning-col,
+.incorrect .meaning-col {
+    background-color: #fff !important;
 }
 
 /* 单词分组之间的分隔行 */

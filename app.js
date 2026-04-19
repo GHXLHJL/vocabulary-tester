@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingNavOverlay = document.getElementById('floating-nav-overlay');
     const appVersionDisplay = document.getElementById('app-version-display');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v26.4.29';
+    const STORAGE_KEY = 'vocabulary_tester_data_v26.4.30';
 
     // 在左上角显示当前版本号
     if (appVersionDisplay) {
@@ -445,6 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
     ];
 
     let words = [];
@@ -564,7 +565,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentGroupTr.id = `module-${wordObj.group}`;
 
                 const separatorTd = document.createElement('td');
-                separatorTd.colSpan = 3;
+                separatorTd.colSpan = 4; // 更新跨列数以包含中文释义列
 
                 const groupLabel = document.createElement('div');
                 groupLabel.className = 'group-label';
@@ -624,6 +625,16 @@ document.addEventListener('DOMContentLoaded', () => {
         tdResult.className = 'result-cell';
         updateResultCell(tdResult, wordObj);
         tr.appendChild(tdResult);
+
+        // 【中文释义】列（默认隐藏，提交后显示）
+        const tdMeaning = document.createElement('td');
+        tdMeaning.className = 'meaning-col';
+        tdMeaning.style.display = 'none';
+        tdMeaning.style.color = '#0056b3'; // 深蓝色，对比度更高，更清晰
+        tdMeaning.style.fontSize = '16px'; // 字号加大一码
+        tdMeaning.style.fontWeight = 'bold'; // 进一步加粗，提升可读性
+        tdMeaning.textContent = wordObj.expectedAnswer;
+        tr.appendChild(tdMeaning);
 
         return tr;
     }
@@ -792,6 +803,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             testSummary.style.display = 'block';
 
+            // 显示所有中文释义列
+            const meaningCols = document.querySelectorAll('.meaning-col');
+            meaningCols.forEach(col => col.style.display = 'table-cell');
+
             // 滚动到成绩汇总区
             testSummary.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
@@ -814,6 +829,10 @@ document.addEventListener('DOMContentLoaded', () => {
             setFloatingNavVisible(false);
             isShowingOnlyErrors = false; // 重置时恢复全部显示
             updateToggleButtonUI();
+
+            // 隐藏所有中文释义列
+            const meaningCols = document.querySelectorAll('.meaning-col');
+            meaningCols.forEach(col => col.style.display = 'none');
         }
     });
 
