@@ -4,8 +4,51 @@ prescribe 开药
 subscribe 订阅/同意
 describe 描述
 
+mantal 覆盖
+mortal 凡人
+mental 精神（健康）的
+metal 金属
+medal 奖章
+
+score 分数
+scorn 蔑视
+corn 玉米
+ore 矿
+sore 痛处
+core 核心
+scar 伤痕
+
+stationary 静止的
+stationery 文具
+
+confuse 迷惑
+refuse 拒绝
+infuse 注入
+diffuse 传播（的）
+transfuse 输（血）
+
+test 测试
+text 文本
+taste 喜好/品味
+task 任务
+
+elect 选举
+erect 建立
+
 cardinal 最重要的
 cordial 热情友好的
+
+expect 期待/预计
+expert 专家（的）
+export 出口（物）
+except 除…之外
+excerpt 摘录
+expend 花钱
+expand 扩大
+extend 延长/包括
+extent 程度
+expire 过期
+expose 暴露
 
 week 星期
 weed 杂草
@@ -51,6 +94,9 @@ thrift 节俭
 
 quota 配额
 quote 引用
+quoth 说
+quotient 商
+quotidian 每日的
 
 parade 游行
 paradox 悖论
@@ -140,7 +186,10 @@ crash 撞车/暴跌
 crack 破裂/打压
 crush 压坏
 
+genuine 真正的
+genius 天才
 ingenious 精巧的
+ingenuity 创造力
 ingenuous 单纯的
 
 serve 服务/用于
@@ -246,9 +295,22 @@ speculate 推测
 spectrum 光谱/范围
 spectacle 景象/眼镜
 
-impel 促使
+repeal 废止
 repel 驱逐
 rebel 反抗
+dispel 驱散
+impel 促使
+compel 强迫
+propel 推动
+expel 开除
+excel 擅长
+
+gas 气体
+gasp 喘气
+gape 裂开
+grasp 理解
+grape 葡萄
+gossip 流言
 
 inventive 善于创新的
 incentive 激励
