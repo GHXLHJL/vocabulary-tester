@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingNavOverlay = document.getElementById('floating-nav-overlay');
     const appVersionDisplay = document.getElementById('app-version-display');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v26.4.32';
+    const STORAGE_KEY = 'vocabulary_tester_data_v26.4.33';
 
     // 在左上角显示当前版本号
     if (appVersionDisplay) {
@@ -545,6 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 104, word: 'bid', expectedAnswer: '出价/努力', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 104, word: 'hid(hide)', expectedAnswer: '躲藏', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 104, word: 'rid', expectedAnswer: '摆脱/除去', userAnswer: '', isCorrect: null },
+
 
 
 
