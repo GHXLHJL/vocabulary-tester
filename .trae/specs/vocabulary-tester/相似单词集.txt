@@ -1,21 +1,140 @@
 相似单词集
 ascribe 将…归因于/认为…具有
-prescribe 开药
+prescribe 开药/规定
 subscribe 订阅/同意
 describe 描述
 
-mantal 覆盖
-mortal 凡人
+mantle 覆盖（物）/地幔
+mortal 凡人/致命的
 mental 精神（健康）的
 metal 金属
-medal 奖章
+medal 奖章/奖牌
+
+ethic 道德观/道德规范
+ethnic 民族的
+
+cannon 猛撞/大炮
+canon 标准/真作集
+
+light 光线/鉴于/点燃
+alight 点亮/落下
+slight 轻微的/轻视
+plight 困境
+delight 愉快/高兴
+flight 航班/飞行
+
+delete 删除/删去
+deplete 耗尽
+
+volume 容量/一卷
+column 专栏/支柱/列
+
+seem 似乎
+deem 认为
+esteem 尊敬
+redeem 弥补/兑换
+
+feed 喂养/提供/饲料
+deed 行为
+indeed 确实
+need 需要
+reed 芦苇
+seed 种子
+
+stuff 东西/填充
+staff 职工/任职于
+stiff 艰难的/（僵）硬的
+
+drill 练习/钻（孔）
+drift 漂流/移动
+draft 草稿/草拟（的）
+thrift 节俭
+
+essential 基本的
+eccentric 古怪的
+
+notion 概念
+notice 注意/通知
+
+type 类型/打字 
+tape 录音/磁带/卷尺
+tap 利用/水龙头
+
+desert 沙漠/丢弃
+dessert 甜点
+
+cherish 珍爱/怀念
+perish 死亡
+nourish 滋养
+
+perspective 观点
+prospective 可能的
+perceptive 有洞察力的
+respective 分别的
+susceptive 敏感的
+retrospective 回想的
+introspective 自省的
+
+gene 基因   
+genesis 起源
+general 普通的
+generic 一般的
+genetic 基因的
+generate 产生
+generation 一代（人）
+generalize 概括/推广
+generous 慷慨的
+genre 类型
+generalization 概括
+
+climb攀爬
+climate气候
+climax高潮
+claim 声称
+acclaim 称赞
+declaim 演讲
+disclaim 否认
+exclaim 呼喊
+proclaim 宣布
+reclaim 回收/开垦
+
+hub 中心/轮轴
+pub 酒馆
+sub 替补/潜水艇
+tub 浴缸
+rub 摩擦
+dub 给…起绰号
+cub 幼崽
+
+device 设备 
+devise 发明 
+advise 建议 
+advice 建议 
+revise 校阅
 
 evolution 进化
 resolution 决定
 revelation 揭露
 revolution 革命
 
-formal 形式的，正规的
+allege 声称
+allegation 指控 
+allegiance 忠诚
+alien  外国的
+align 使一致
+alliance 联盟
+ally 盟友
+allay 减轻
+alloy 合金
+alley 小巷
+rally 集合
+
+alleviate 缓解
+alienate 使疏远
+affiliate 隶属于
+allocate 分配
+
+formal 形式的/正规的
 formality 例行公事
 format 格式(化)
 formative 影响形成的
@@ -85,6 +204,7 @@ task 任务
 
 elect 选举
 erect 建立
+enact 制定法律/实施
 
 cardinal 最重要的
 cordial 热情友好的
@@ -105,6 +225,7 @@ week 星期
 weed 杂草
 weep 流出/哭泣
 sweep 扫过/迅速传播
+
 wipe 擦
 wife 妻子
 whip 党鞭/鞭子
@@ -139,10 +260,6 @@ saw 锯
 sew 缝制
 sow 播种
 
-driff 移动/漂流
-draff 草稿/草拟（的）
-thrift 节俭
-
 quota 配额
 quote 引用
 quoth 说
@@ -157,8 +274,12 @@ paradise 天堂
 alter 改变
 alert 警惕（的）
 avert 防止
+advert 广告/提及
+advent 到来
 overt 公开的
 invert 颠倒
+convert 转换/改变
+divert 转向/转移
 
 principal 主要的
 principle 原则
@@ -216,7 +337,6 @@ progress 进步/进展
 congress 国会/代表大会
 
 deform 使畸形
-inform 通知
 perform 表现
 uniform 制服/统一的
 conform 遵守/相一致
@@ -237,34 +357,35 @@ phrase 短语/叙述
 purchase 购买
 
 assume 假设
+reassume 重新假定  
 resume 继续/简历
 presume 推测
 consume 消耗/吃喝
+subsume 包含
 
-clash 冲突
+clash 冲突/分歧
 crash 撞车/暴跌
 crack 破裂/打压
-crush 压坏
+crush 压坏/迷恋
 
-genuine 真正的
-genius 天才
-ingenious 精巧的
-ingenuity 创造力
-ingenuous 单纯的
+genuine 真正的/真诚的
+genius 天才/天赋
+ingenious 精巧的/巧妙的
+ingenuity 创造力/聪明才智
+ingenuous 单纯的/天真的
 
 serve 服务/用于
-reserve 预订
-observe 观察
+reserve 预订/保护区
+observe 观察/评论
 deserve 值得
-preserve 维护
-subserve 促进
-conserve 节约
+preserve 维护/专属领域
+conserve 节约/保护
 
-congregate 聚集
-segregate 使隔离
+congregate 集合/聚集
+segregate （使）隔离/分开
 
-convention 习俗
-contention 争论
+convention 习俗/大会
+contention 争论/观点
 
 contract 合同
 contrast 差异
@@ -286,7 +407,6 @@ poverty 贫穷的
 proper 恰当的
 prosper 繁荣
 prospect 可能性
-propel 推进
 
 reproach 责备
 approach 接近
@@ -351,9 +471,12 @@ simulate 假装
 stimulate 刺激
 calculate 计算
 speculate 推测
+stipulate 规定
 
 spectrum 光谱/范围
 spectacle 景象/眼镜
+spectacular 壮观的
+speculative 猜测的
 
 repeal 废止
 repel 驱逐
@@ -446,42 +569,54 @@ compliment 称赞
 trail 追踪
 trial 试验
 
-state 国家/状况
+state 国家（的）/状况/说明
 statue 雕塑
 status 地位
 statute 法令
 stature 身材
 saturate 浸透
 
+crumple 起皱/瘫倒
+crumble 坍塌
+grumble 抱怨
 humble 谦逊的
+bumble 弄糟
+fumble 摸索/笨手笨脚
+jumble 使混乱
+rumble 隆隆作响
 tumble 跌到
 stumble 绊倒
 gamble 赌博
+shamble 蹒跚
+assemble 集合/组装
+resemble 与…相似
+dissemble 掩饰/假装
+ensemble 剧团/套装
 
-render 渲染
-tender 温柔的
-wonder 惊讶
+render （使）成为/表达
+tender 温柔的/提交
+wonder 想知道/奇观/惊讶
 gender 性别
 ponder 考虑
 
-abstract 抽象的
-subject 主题
-object 目标
-inject 注射
-project 项目
-eject 驱逐
+abstract 抽象的/摘要
+subject 主题/（使）遭受
+object 物体/反对/对象
+inject 注射/增添
+project 项目/计划/投射
+eject 驱逐/喷出
 
-polish 擦亮
-astonish 使吃惊
-abolish 废止
-foolish 愚蠢的
+polish 擦亮/修改
+astonish （使）惊讶
+abolish 废除/取消
+foolish 愚蠢的/尴尬的
 
 consensus 共识
-census 官方统计
+census 官方统计/人口普查
 versus 以...为对手
 
-aid 援助
-lid 盖子
-bid 出价
+aid 援助/帮助
+lid 盖子/眼皮
+bid 出价/努力
 hid(hide) 躲藏
-rid 摆脱
+rid 摆脱/除去

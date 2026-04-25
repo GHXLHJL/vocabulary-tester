@@ -18,7 +18,7 @@ if /i not "!confirm!"=="Y" (
 
 echo.
 echo [1/3] Replacing word list from txt...
-node replace_words_helper.js
+node scripts\node\replace_words_helper.js
 if !errorlevel! neq 0 (
     echo [ERROR] Failed while replacing words.
     pause

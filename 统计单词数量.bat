@@ -13,9 +13,9 @@ if /i "%~1"=="--no-pause" (
 )
 
 if "%target_file%"=="" (
-    python count_words_in_txt.py
+    python scripts\python\count_words_in_txt.py
 ) else (
-    python count_words_in_txt.py "%target_file%"
+    python scripts\python\count_words_in_txt.py "%target_file%"
 )
 
 if not defined no_pause (
