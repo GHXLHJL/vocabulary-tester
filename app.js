@@ -56,11 +56,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const SUPABASE_KEY = 'sb_publishable_5JmvfLkKx-Nmv9Dts9OvDw_2kOXu5qn';
     let supabase = null;
 
-    if (window.supabase) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    function initSupabase() {
+        try {
+            if (window.supabase) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                console.log('Supabase 客户端初始化成功');
+                return true;
+            } else {
+                console.error('Supabase SDK 未能加载');
+                return false;
+            }
+        } catch (e) {
+            console.error('Supabase 初始化失败:', e);
+            return false;
+        }
     }
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v26.7.4'; // 升级到 v3.0
+    initSupabase();
+
+    const STORAGE_KEY = 'vocabulary_tester_data_v26.7.6'; // 版本更新以刷新缓存
 
     // 优化方案参数配置
     const SETTINGS = {
@@ -617,6 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 104, word: 'bid', expectedAnswer: '出价/努力', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 104, word: 'hid(hide)', expectedAnswer: '躲藏', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 104, word: 'rid', expectedAnswer: '摆脱/除去', userAnswer: '', isCorrect: null },
+
 
 
 
@@ -1481,6 +1496,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (response.ok) return response;
+                if (response.status === 404) {
+                    console.warn('Supabase Edge Function 未找到，请确保已部署 maimemo-proxy');
+                    throw new Error('代理函数未部署');
+                }
                 if (response.status === 401) throw new Error('Token 无效');
                 throw new Error(`代理服务器响应错误: ${response.status}`);
             } catch (e) {
@@ -1545,6 +1564,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetchWithProxy(targetUrl, maimemoConfig.token);
             const data = await response.json();
 
+            if (data.error) throw new Error(data.error);
+
             // 过滤出薄弱单词 (status < 1 表示模糊或忘记)
             const weakWords = (data.learning || [])
                 .filter(item => item.status < 1)
@@ -1561,8 +1582,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.error('墨墨同步失败:', err);
             let errorMsg = '同步失败：' + (err.message || '网络连接异常');
-            if (err.message.toLowerCase().includes('fetch') || err.message.includes('代理')) {
-                errorMsg += '\n\n提示：检测到跨域或代理被拦截。请尝试：\n1. 切换网络（如从 4G 换到 Wi-Fi）重试\n2. 检查 Token 是否输入正确\n3. 手机端建议使用内置浏览器或 Chrome。';
+
+            if (err.message.includes('代理函数未部署') || err.message.includes('404')) {
+                errorMsg = '❌ 同步失败：Supabase 代理函数未部署。\n\n解决办法：\n1. 请查看根目录下的 supabase_edge_function.md 文件。\n2. 按照步骤使用 Supabase CLI 部署 maimemo-proxy 函数。\n3. 部署后即可解决跨域拦截问题。';
+            } else if (err.message.toLowerCase().includes('fetch') || err.message.includes('拦截')) {
+                errorMsg += '\n\n提示：请求被浏览器拦截。请确保你没有直接打开 HTML 文件，而是通过本地服务器（如 Live Server）运行。';
             }
             alert(errorMsg);
         } finally {
@@ -1603,7 +1627,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function fetchLeaderboard() {
-        if (!supabase) return;
+        if (!supabase) {
+            alert('Supabase 连接未建立。请确保网络正常且已正确配置 API Key。');
+            leaderboardModal.classList.remove('open');
+            return;
+        }
 
         leaderboardLoading.style.display = 'block';
         leaderboardContent.style.display = 'none';
@@ -1652,6 +1680,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     viewLeaderboardBtn.addEventListener('click', () => {
+        console.log('排行榜按钮被点击');
         leaderboardModal.classList.add('open');
         fetchLeaderboard();
     });
