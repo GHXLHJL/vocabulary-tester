@@ -101,8 +101,8 @@ h2 {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
-    font-size: 13px;
-    color: #666;
+    font-size: 14px;
+    color: #555;
     line-height: 1.5;
 }
 
@@ -114,6 +114,23 @@ h2 {
     border-radius: 12px;
     background: #f8f9fa;
     box-sizing: border-box;
+    font-size: 14px;
+    color: #555;
+    letter-spacing: 0.6px;
+}
+
+.stats-line strong {
+    margin: 0 2px;
+    font-size: 1.1em;
+    font-weight: 700;
+}
+
+.stats-count-main {
+    color: #2f3640;
+}
+
+.stats-count-a {
+    color: #1f7d40;
 }
 
 .dashboard-tools {
@@ -1053,7 +1070,7 @@ td input[type="text"][readonly]:focus {
         flex-direction: column;
         align-items: flex-start;
         gap: 8px;
-        font-size: 14px;
+        font-size: 15px;
         line-height: 1.5;
         max-width: 100%;
     }
@@ -1063,6 +1080,8 @@ td input[type="text"][readonly]:focus {
         padding: 8px 12px;
         white-space: nowrap;
         width: 100%;
+        font-size: 15px;
+        letter-spacing: 0.8px;
     }
 
     .leaderboard-btn {
