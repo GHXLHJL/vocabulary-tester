@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingNavList = document.getElementById('floating-nav-list');
     const floatingNavOverlay = document.getElementById('floating-nav-overlay');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v26.7.1'; // 升级到 v3.0
+    const STORAGE_KEY = 'vocabulary_tester_data_v26.7.2'; // 升级到 v3.0
 
     // 优化方案参数配置
     const SETTINGS = {
@@ -597,6 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 104, word: 'bid', expectedAnswer: '出价/努力', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 104, word: 'hid(hide)', expectedAnswer: '躲藏', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 104, word: 'rid', expectedAnswer: '摆脱/除去', userAnswer: '', isCorrect: null },
+
 
 
 
@@ -1434,30 +1435,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ==== 墨墨 API 同步逻辑 (多代理增强版) ====
     async function fetchWithProxy(targetUrl, token) {
-        // 备选代理列表：尝试不同的转发机制
+        // 备选代理列表：这些代理通常能更好地转发 Authorization 头
         const proxies = [
+            url => `https://thingproxy.freeboard.io/fetch/${url}`,
             url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-            url => `https://corsproxy.io/?${url}`,
-            url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+            url => `https://corsproxy.io/?${url}`
         ];
 
         let lastError = null;
         for (const proxyFn of proxies) {
             try {
                 const finalUrl = proxyFn(targetUrl);
+                console.log(`正在尝试通过代理访问: ${finalUrl}`);
+                
                 const response = await fetch(finalUrl, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    method: 'GET',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    },
+                    mode: 'cors'
                 });
                 
                 if (response.ok) return response;
                 if (response.status === 401) throw new Error('Token 无效');
-                console.warn(`当前代理服务器返回错误: ${response.status}，正在尝试下一个...`);
+                if (response.status === 403) throw new Error('代理服务器拒绝访问');
+                console.warn(`代理服务器返回状态码: ${response.status}，尝试下一个...`);
             } catch (e) {
                 lastError = e;
                 continue;
             }
         }
-        throw lastError || new Error('所有代理服务器均失效');
+        throw lastError || new Error('所有代理均失效');
     }
 
     async function fetchWordInterpretation(word) {
