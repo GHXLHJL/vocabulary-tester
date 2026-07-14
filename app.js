@@ -34,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const userNicknameInput = document.getElementById('user-nickname');
     const saveTokenBtn = document.getElementById('save-token-btn');
     const syncWeaknessToggle = document.getElementById('sync-weakness-toggle');
-    const autoExpandToggle = document.getElementById('auto-expand-interpretation');
 
     // 悬浮错题导航相关 DOM
     const floatingNavContainer = document.getElementById('floating-nav-container');
@@ -80,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.14';
+    const APP_VERSION = 'v26.7.15';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const MAIMEMO_RESPONSE_WEIGHTS = {
         FORGET: 3,
@@ -113,11 +112,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     let maimemoConfig = {
         token: '',
-        syncWeakness: true,
-        autoExpand: true
+        syncWeakness: true
     };
     let maimemoWordStatusMap = {}; // 缓存墨墨单词状态：{ word: last_response }
-    let maimemoInterpretationCache = {}; // 缓存墨墨释义： { word: [meaning1, meaning2] }
     let currentTestMode = null; // null | 'daily' | 'weekly' | 'monthly'
     let currentTestGroups = []; // 当前正在测试的词组引用
     let currentTestSnapshot = null; // 进入测试前的快照，用于退出时回滚
@@ -764,10 +761,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 从 LocalStorage 加载数据
     function loadData() {
         try {
-            // 加载释义缓存
-            const cacheData = localStorage.getItem('maimemo_interpretation_cache');
-            if (cacheData) maimemoInterpretationCache = JSON.parse(cacheData);
-
             // 尝试加载新格式 v3.0
             const v3Data = localStorage.getItem(STORAGE_KEY);
             if (v3Data) {
@@ -783,7 +776,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 maimemoTokenInput.value = maimemoConfig.token || '';
                 userNicknameInput.value = systemState.nickname || '考研战士';
                 syncWeaknessToggle.checked = !!maimemoConfig.syncWeakness;
-                autoExpandToggle.checked = !!maimemoConfig.autoExpand;
 
                 updateDashboardUI();
                 return;
@@ -818,9 +810,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 保存数据到 LocalStorage
     function saveData() {
         try {
-            // 保存释义缓存
-            localStorage.setItem('maimemo_interpretation_cache', JSON.stringify(maimemoInterpretationCache));
-
             const dataToSave = {
                 wordGroups: wordGroups,
                 systemState: systemState,
@@ -865,13 +854,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 渲染表格内容
     function renderTable() {
         wordTbody.innerHTML = '';
-
-        // 异步静默抓取墨墨释义（如果开启）
-        if (maimemoConfig.token && maimemoConfig.autoExpand) {
-            currentTestGroups.forEach(g => {
-                g.words.forEach(w => fetchWordInterpretation(w.word));
-            });
-        }
 
         // currentTestGroups 存储当前试卷中选中的词组
         currentTestGroups.forEach((groupObj) => {
@@ -1220,24 +1202,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getPossibleAnswers(wordObj) {
-        const localPossible = [...new Set(
+        return [...new Set(
             wordObj.expectedAnswer
                 .split('/')
                 .flatMap(ans => expandOptionalAnswerVariants(ans))
                 .filter(Boolean)
         )];
-
-        // 如果开启了墨墨增强且有缓存
-        if (maimemoConfig.autoExpand && maimemoConfig.token) {
-            const cachedMeanings = maimemoInterpretationCache[wordObj.word.toLowerCase()];
-            if (cachedMeanings && Array.isArray(cachedMeanings)) {
-                // 将墨墨释义也加入判定池
-                const apiPossible = cachedMeanings.flatMap(ans => expandOptionalAnswerVariants(ans));
-                return [...new Set([...localPossible, ...apiPossible])];
-            }
-        }
-
-        return localPossible;
     }
 
     // 提交检测所有单词
@@ -1457,7 +1427,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         maimemoConfig.token = token;
         maimemoConfig.syncWeakness = syncWeaknessToggle.checked;
-        maimemoConfig.autoExpand = autoExpandToggle.checked;
 
         if (nickname) {
             systemState.nickname = nickname;
@@ -1651,44 +1620,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.error('所有代理均失败:', e);
             throw e;
-        }
-    }
-
-    async function fetchWordInterpretation(word) {
-        if (!maimemoConfig.token || !maimemoConfig.autoExpand) return;
-        const lowerWord = word.toLowerCase();
-        if (maimemoInterpretationCache[lowerWord]) return;
-
-        try {
-            const vocabResponse = await fetchWithProxy(
-                `https://open.maimemo.com/open/api/v1/vocabulary?spelling=${encodeURIComponent(lowerWord)}`,
-                maimemoConfig.token
-            );
-            const vocabData = await vocabResponse.json();
-            const voc = vocabData?.data?.voc;
-
-            if (!voc || !voc.id) {
-                return;
-            }
-
-            const interpretationResponse = await fetchWithProxy(
-                `https://open.maimemo.com/open/api/v1/interpretations?voc_id=${encodeURIComponent(voc.id)}`,
-                maimemoConfig.token
-            );
-            const interpretationData = await interpretationResponse.json();
-
-            if (Array.isArray(interpretationData?.data?.interpretations)) {
-                const meanings = interpretationData.data.interpretations
-                    .map(item => item.interpretation)
-                    .filter(Boolean);
-
-                if (meanings.length > 0) {
-                    maimemoInterpretationCache[lowerWord] = meanings;
-                    saveData();
-                }
-            }
-        } catch (e) {
-            console.error(`获取单词 ${word} 释义失败`, e);
         }
     }
 
