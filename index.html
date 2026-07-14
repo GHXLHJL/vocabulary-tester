@@ -26,19 +26,24 @@
             <!-- 仪表盘：优化方案 3.0 核心入口 -->
             <div id="dashboard">
                 <div class="dashboard-header">
-                    <h3>
-                        <span style="margin-right: 8px;">🏠</span> 学习仪表盘
-                    </h3>
-                    <div class="dashboard-tools">
-                        <button id="view-leaderboard-btn" class="leaderboard-btn" title="查看排行榜">
-                            <span class="leaderboard-btn-icon">🏆</span>
-                            <span>排行榜</span>
-                        </button>
-                        <div id="stats-summary" class="stats-summary">
-                            总池: <strong id="main-pool-count" style="color: #333;">0</strong> 组 |
-                            A池: <strong id="a-pool-count" style="color: #28a745;">0</strong> 组
+                    <div class="dashboard-top-row">
+                        <h3>
+                            <span style="margin-right: 8px;">🏠</span> 学习仪表盘
+                        </h3>
+                        <div class="dashboard-tools">
+                            <button id="settings-toggle-btn" class="leaderboard-btn settings-btn" title="设置 API Token">
+                                <span class="leaderboard-btn-icon">⚙️</span>
+                                <span>设置</span>
+                            </button>
+                            <button id="view-leaderboard-btn" class="leaderboard-btn" title="查看排行榜">
+                                <span class="leaderboard-btn-icon">🏆</span>
+                                <span>排行榜</span>
+                            </button>
                         </div>
-                        <button id="settings-toggle-btn" class="btn-icon" title="设置 API Token">⚙️</button>
+                    </div>
+                    <div id="stats-summary" class="stats-summary">
+                        <div class="stats-line">总池: <strong id="main-pool-count" style="color: #333;">0</strong> 组</div>
+                        <div class="stats-line">A池: <strong id="a-pool-count" style="color: #28a745;">0</strong> 组</div>
                     </div>
                 </div>
 

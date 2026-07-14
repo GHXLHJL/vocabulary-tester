@@ -64,10 +64,14 @@ h2 {
 }
 
 .dashboard-header {
+    margin-bottom: 15px;
+}
+
+.dashboard-top-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
+    align-items: flex-start;
+    gap: 12px;
 }
 
 .dashboard-header h3 {
@@ -78,14 +82,24 @@ h2 {
 }
 
 .dashboard-header .stats-summary {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: #f8f9fa;
     font-size: 13px;
     color: #666;
+    line-height: 1.65;
+}
+
+.stats-line + .stats-line {
+    margin-top: 2px;
 }
 
 .dashboard-tools {
     display: flex;
-    align-items: center;
-    gap: 15px;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
 }
 
 .dashboard-grid {
@@ -227,6 +241,11 @@ h2 {
 .leaderboard-btn-icon {
     font-size: 16px;
     line-height: 1;
+}
+
+.settings-btn {
+    background: #eef2f5;
+    color: #5a6776;
 }
 
 .btn-primary-sm {
@@ -880,55 +899,60 @@ td input[type="text"][readonly]:focus {
         margin-bottom: 10px;
     }
 
+    .tester-section {
+        margin-top: -4px;
+        overflow-x: auto;
+    }
+
     #dashboard {
-        padding: 16px 14px 18px;
+        padding: 12px 14px 18px;
         border-radius: 16px;
         margin-bottom: 24px;
     }
 
     .dashboard-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 14px;
-        margin-bottom: 16px;
+        margin-bottom: 14px;
+    }
+
+    .dashboard-top-row {
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 8px;
     }
 
     .dashboard-header h3 {
-        justify-content: center;
+        justify-content: flex-start;
         font-size: 16px;
+        padding-top: 4px;
     }
 
     .dashboard-tools {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 10px 12px;
-        align-items: center;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+        flex-shrink: 0;
     }
 
     .dashboard-header .stats-summary {
-        grid-column: 1 / -1;
-        padding: 10px 12px;
+        margin-top: 0;
+        padding: 11px 12px;
         border-radius: 12px;
         background: #f8f9fa;
-        text-align: center;
+        text-align: left;
         font-size: 14px;
         line-height: 1.6;
     }
 
-    .leaderboard-btn,
-    .btn-icon {
+    .leaderboard-btn {
         min-height: 42px;
+        min-width: 96px;
     }
 
     .leaderboard-btn {
         justify-content: center;
         padding: 9px 14px;
         font-size: 14px;
-    }
-
-    .btn-icon {
-        justify-self: end;
-        padding: 8px;
     }
 
     .dashboard-grid {
@@ -992,11 +1016,6 @@ td input[type="text"][readonly]:focus {
 
     #add-word-form button {
         width: 100%;
-    }
-
-    /* 表格在手机端允许横向滚动，或者压缩内边距 */
-    .tester-section {
-        overflow-x: auto;
     }
 
     th,
