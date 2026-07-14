@@ -82,6 +82,12 @@ h2 {
     color: #666;
 }
 
+.dashboard-tools {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -794,6 +800,13 @@ td input[type="text"][readonly]:focus {
         padding-bottom: 88px;
     }
 
+    .github-source-link {
+        position: static;
+        margin-bottom: 10px;
+        line-height: 1.5;
+        text-align: center;
+    }
+
     #back-to-top-btn {
         bottom: calc(14px + env(safe-area-inset-bottom, 0px));
         right: 12px;
@@ -857,7 +870,120 @@ td input[type="text"][readonly]:focus {
     }
 
     .container {
-        padding: 15px 10px;
+        padding: 16px 12px 20px;
+        border-radius: 16px;
+    }
+
+    h1 {
+        font-size: 28px;
+        line-height: 1.2;
+        margin-bottom: 10px;
+    }
+
+    #dashboard {
+        padding: 16px 14px 18px;
+        border-radius: 16px;
+        margin-bottom: 24px;
+    }
+
+    .dashboard-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+
+    .dashboard-header h3 {
+        justify-content: center;
+        font-size: 16px;
+    }
+
+    .dashboard-tools {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px 12px;
+        align-items: center;
+    }
+
+    .dashboard-header .stats-summary {
+        grid-column: 1 / -1;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: #f8f9fa;
+        text-align: center;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .leaderboard-btn,
+    .btn-icon {
+        min-height: 42px;
+    }
+
+    .leaderboard-btn {
+        justify-content: center;
+        padding: 9px 14px;
+        font-size: 14px;
+    }
+
+    .btn-icon {
+        justify-self: end;
+        padding: 8px;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .status-card {
+        padding: 14px 14px 14px 16px;
+        border-radius: 12px;
+        text-align: left;
+    }
+
+    .status-card .label {
+        font-size: 13px;
+        margin-bottom: 6px;
+    }
+
+    .status-card .value {
+        font-size: 18px;
+        line-height: 1.25;
+        margin-top: 0;
+    }
+
+    .test-actions {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .test-actions button {
+        min-height: 50px;
+        border-radius: 12px;
+        font-size: 16px;
+    }
+
+    .dashboard-footer {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .dashboard-footer button {
+        min-height: 46px;
+        border-radius: 10px;
+        white-space: normal;
+        line-height: 1.35;
+        text-align: center;
+        justify-content: center;
+    }
+
+    #sync-maimemo-btn {
+        grid-column: 1 / -1;
+        margin-right: 0 !important;
     }
 
     #add-word-form {
