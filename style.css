@@ -499,6 +499,11 @@ h2 {
     color: white;
 }
 
+#exit-test-btn {
+    background-color: #dc3545;
+    color: white;
+}
+
 /* 成绩汇总区 */
 #test-summary {
     display: none;

@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const wordTbody = document.getElementById('word-tbody');
     const submitTestBtn = document.getElementById('submit-test-btn');
     const resetTestBtn = document.getElementById('reset-test-btn');
+    const exitTestBtn = document.getElementById('exit-test-btn');
     const testSummary = document.getElementById('test-summary');
     const summaryTotal = document.getElementById('summary-total');
     const summaryCorrect = document.getElementById('summary-correct');
@@ -106,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let maimemoInterpretationCache = {}; // 缓存墨墨释义： { word: [meaning1, meaning2] }
     let currentTestMode = null; // null | 'daily' | 'weekly' | 'monthly'
     let currentTestGroups = []; // 当前正在测试的词组引用
+    let currentTestSnapshot = null; // 进入测试前的快照，用于退出时回滚
 
     const appVersionDisplay = document.getElementById('app-version-display');
 
@@ -1050,6 +1052,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 绑定仪表盘按钮事件
     startDailyBtn.addEventListener('click', () => {
         if (confirm('开始今日轻测？将从总池中加权抽取 30 组词。')) {
+            currentTestSnapshot = createCurrentTestSnapshot();
             currentTestGroups = generateDailyTest();
             currentTestMode = 'daily';
             if (currentTestGroups.length > 0) {
@@ -1062,6 +1065,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     startWeeklyBtn.addEventListener('click', () => {
         if (confirm('开始每周复盘？将从 A 池中随机抽取 20% 词组检测是否退化。')) {
+            currentTestSnapshot = createCurrentTestSnapshot();
             currentTestGroups = generateWeeklyReview();
             currentTestMode = 'weekly';
             if (currentTestGroups.length > 0) {
@@ -1074,6 +1078,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     startMonthlyBtn.addEventListener('click', () => {
         if (confirm('开始月度总测？A 池所有词组将强制回炉唤醒，并从总池中抽取约 60% 词组进行大规模筛查。')) {
+            currentTestSnapshot = createCurrentTestSnapshot();
             currentTestGroups = generateMonthlyTest();
             currentTestMode = 'monthly';
             if (currentTestGroups.length > 0) {
@@ -1091,6 +1096,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 w.isCorrect = null;
             });
         });
+    }
+
+    function createCurrentTestSnapshot() {
+        return {
+            wordGroups: JSON.parse(JSON.stringify(wordGroups)),
+            systemState: JSON.parse(JSON.stringify(systemState))
+        };
+    }
+
+    function leaveCurrentTest(shouldRestoreSnapshot) {
+        if (shouldRestoreSnapshot && currentTestSnapshot) {
+            wordGroups = JSON.parse(JSON.stringify(currentTestSnapshot.wordGroups));
+            systemState = JSON.parse(JSON.stringify(currentTestSnapshot.systemState));
+            saveData();
+        }
+
+        currentTestSnapshot = null;
+        currentTestGroups = [];
+        currentTestMode = null;
+        testSummary.style.display = 'none';
+        setFloatingNavVisible(false);
+        setFloatingNavOpen(false);
+        dashboard.style.display = 'block';
+        updateDashboardUI();
+        renderTable();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     // 更新行的样式（正确/错误背景色）
@@ -1223,6 +1254,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (currentTestMode === 'monthly') systemState.lastMonthlyTestDate = today;
 
         saveData();
+        currentTestSnapshot = null;
         renderTable();
         updateDashboardUI();
         dashboard.style.display = 'block';
@@ -1281,6 +1313,12 @@ document.addEventListener('DOMContentLoaded', () => {
             renderTable();
             testSummary.style.display = 'none';
             setFloatingNavVisible(false);
+        }
+    });
+
+    exitTestBtn.addEventListener('click', () => {
+        if (confirm('确定要退出检测吗？当前这一页的作答和本轮变动将不保存，并返回主页面。')) {
+            leaveCurrentTest(true);
         }
     });
 
