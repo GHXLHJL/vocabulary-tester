@@ -108,11 +108,13 @@ h2 {
 }
 
 .dict-status {
-    margin-top: 6px;
-    padding: 8px 12px;
-    border-radius: 10px;
-    font-size: 12px;
-    line-height: 1.5;
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.6;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 .dict-status-loading {
@@ -1097,6 +1099,15 @@ td input[type="text"][readonly]:focus {
         font-size: 15px;
         line-height: 1.5;
         max-width: 100%;
+    }
+
+    .dict-status {
+        margin: 4px 0 16px;
+        min-height: 72px;
+        display: flex;
+        align-items: center;
+        font-size: 15px;
+        border-radius: 14px;
     }
 
     .stats-line {

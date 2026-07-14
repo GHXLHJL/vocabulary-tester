@@ -136,6 +136,20 @@ document.addEventListener('DOMContentLoaded', () => {
         FAMILIAR: 0,
         WELL_FAMILIAR: -1
     };
+    const CHINESE_NEAR_SYNONYM_GROUPS = [
+        ['方法', '办法', '方式', '手段', '途径'],
+        ['聪明', '机灵', '巧妙', '灵巧'],
+        ['聪明的', '机灵的', '巧妙的', '灵巧的'],
+        ['水平', '水准', '程度', '等级'],
+        ['不可避免', '不可避免的', '无法避免', '无法避免的'],
+        ['必然发生', '必然发生的', '必然', '必然的']
+    ];
+    const CHINESE_NEAR_SYNONYM_MAP = CHINESE_NEAR_SYNONYM_GROUPS.reduce((accumulator, group) => {
+        group.forEach(item => {
+            accumulator[item] = group;
+        });
+        return accumulator;
+    }, {});
 
     // 优化方案参数配置
     const SETTINGS = {
@@ -1345,6 +1359,39 @@ document.addEventListener('DOMContentLoaded', () => {
         return str.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '');
     }
 
+    function expandNearSynonymVariants(str) {
+        const normalized = normalizeAnswerString(str);
+        if (!normalized) return [];
+
+        const queue = [normalized];
+        const variants = new Set();
+
+        while (queue.length > 0) {
+            const current = queue.pop();
+            if (!current || variants.has(current)) {
+                continue;
+            }
+
+            variants.add(current);
+
+            const withoutLeadingMarker = current.replace(/^(将|把|使|令)/, '');
+            if (withoutLeadingMarker && withoutLeadingMarker !== current) {
+                queue.push(withoutLeadingMarker);
+            }
+
+            if (current.endsWith('的')) {
+                queue.push(current.slice(0, -1));
+            }
+
+            const synonymGroup = CHINESE_NEAR_SYNONYM_MAP[current];
+            if (synonymGroup) {
+                synonymGroup.forEach(item => queue.push(item));
+            }
+        }
+
+        return [...variants];
+    }
+
     // 将“传播（的）”展开为“传播”和“传播的”这类可接受答案
     function expandOptionalAnswerVariants(str) {
         const optionalPattern = /([（(])([^（）()]+)([）)])/;
@@ -1364,13 +1411,24 @@ document.addEventListener('DOMContentLoaded', () => {
         ];
     }
 
+    function expandMeaningVariants(str) {
+        return expandOptionalAnswerVariants(str)
+            .flatMap(ans => expandNearSynonymVariants(ans))
+            .filter(Boolean);
+    }
+
     function getPossibleAnswers(wordObj) {
         return [...new Set(
             wordObj.expectedAnswer
                 .split('/')
-                .flatMap(ans => expandOptionalAnswerVariants(ans))
+                .flatMap(ans => expandMeaningVariants(ans))
                 .filter(Boolean)
         )];
+    }
+
+    function isMeaningMatch(userAnswer, candidateAnswers) {
+        const userVariants = new Set(expandNearSynonymVariants(userAnswer));
+        return candidateAnswers.some(answer => userVariants.has(answer));
     }
 
     // 提交检测所有单词
@@ -1403,15 +1461,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (userAns.trim() === '') {
                     wordObj.isCorrect = false;
                 } else {
-                    const cleanedUserAns = normalizeAnswerString(userAns);
                     const possibleAnswers = getPossibleAnswers(wordObj);
-                    let isMatch = possibleAnswers.some(ans => ans === cleanedUserAns);
+                    let isMatch = isMeaningMatch(userAns, possibleAnswers);
 
                     // 如果本地词库没匹配上，尝试大库匹配
                     if (!isMatch && kaoyanDict) {
                         const wordKey = wordObj.word.toLowerCase();
-                        const dictTranslations = kaoyanDict[wordKey] || [];
-                        isMatch = dictTranslations.some(t => normalizeAnswerString(t) === cleanedUserAns);
+                        const dictTranslations = (kaoyanDict[wordKey] || [])
+                            .flatMap(translation => expandNearSynonymVariants(translation));
+                        isMatch = isMeaningMatch(userAns, [...new Set(dictTranslations)]);
                     }
 
                     wordObj.isCorrect = isMatch;
