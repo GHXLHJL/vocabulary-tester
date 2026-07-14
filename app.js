@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v26.7.7'; // 版本更新以刷新缓存
+    const STORAGE_KEY = 'vocabulary_tester_data_v26.7.8'; // 版本更新以刷新缓存
 
     // 优化方案参数配置
     const SETTINGS = {
@@ -631,6 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 104, word: 'bid', expectedAnswer: '出价/努力', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 104, word: 'hid(hide)', expectedAnswer: '躲藏', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 104, word: 'rid', expectedAnswer: '摆脱/除去', userAnswer: '', isCorrect: null },
+
 
 
 
@@ -1490,7 +1491,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(proxyFuncUrl, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'x-maimemo-token': token,
+                        'apikey': SUPABASE_KEY,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ url: targetUrl })

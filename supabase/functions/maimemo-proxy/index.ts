@@ -13,7 +13,7 @@ serve(async (req) => {
 
   try {
     const { url } = await req.json()
-    const authHeader = req.headers.get('Authorization')
+    const authHeader = req.headers.get('x-maimemo-token') || req.headers.get('Authorization')
 
     if (!url) {
       return new Response(JSON.stringify({ error: 'Missing target URL' }), {
