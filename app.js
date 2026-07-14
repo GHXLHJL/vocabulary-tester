@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v26.7.8'; // 版本更新以刷新缓存
+    const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 版本更新以刷新缓存
 
     // 优化方案参数配置
     const SETTINGS = {
@@ -631,6 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 104, word: 'bid', expectedAnswer: '出价/努力', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 104, word: 'hid(hide)', expectedAnswer: '躲藏', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 104, word: 'rid', expectedAnswer: '摆脱/除去', userAnswer: '', isCorrect: null },
+
 
 
 
