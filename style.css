@@ -352,6 +352,52 @@ h2 {
     padding: 20px;
 }
 
+.confirm-modal-content {
+    width: min(360px, 88vw);
+}
+
+.confirm-modal-body {
+    padding: 24px 20px 20px;
+    text-align: center;
+}
+
+.confirm-modal-body h3 {
+    margin: 0 0 12px;
+    font-size: 20px;
+    color: #2c3e50;
+}
+
+.confirm-modal-body p {
+    margin: 0;
+    color: #555;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.confirm-modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 22px;
+}
+
+.confirm-modal-actions button {
+    flex: 1;
+    padding: 11px 0;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.confirm-btn-secondary {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.confirm-btn-primary {
+    background: #007bff;
+    color: #fff;
+}
+
 .settings-group {
     margin-bottom: 20px;
 }

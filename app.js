@@ -51,6 +51,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const leaderboardLoading = document.getElementById('leaderboard-loading');
     const leaderboardContent = document.getElementById('leaderboard-content');
     const leaderboardTbody = document.getElementById('leaderboard-tbody');
+    const testActionConfirmModal = document.getElementById('test-action-confirm-modal');
+    const testActionConfirmTitle = document.getElementById('test-action-confirm-title');
+    const testActionConfirmMessage = document.getElementById('test-action-confirm-message');
+    const testActionCancelBtn = document.getElementById('test-action-cancel-btn');
+    const testActionConfirmBtn = document.getElementById('test-action-confirm-btn');
 
     // Supabase 配置
     const SUPABASE_URL = 'https://iebdkqswcyuyqsusmocn.supabase.co';
@@ -108,6 +113,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentTestMode = null; // null | 'daily' | 'weekly' | 'monthly'
     let currentTestGroups = []; // 当前正在测试的词组引用
     let currentTestSnapshot = null; // 进入测试前的快照，用于退出时回滚
+
+    let confirmActionResolver = null;
 
     const appVersionDisplay = document.getElementById('app-version-display');
 
@@ -1135,6 +1142,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 统一清洗字符串，但保留括号内的正文字符，只去掉括号和标点
+    function openTestActionConfirm(title, message) {
+        testActionConfirmTitle.textContent = title;
+        testActionConfirmMessage.textContent = message;
+        testActionConfirmModal.classList.add('open');
+
+        return new Promise((resolve) => {
+            confirmActionResolver = resolve;
+        });
+    }
+
+    function closeTestActionConfirm(result) {
+        testActionConfirmModal.classList.remove('open');
+        if (confirmActionResolver) {
+            confirmActionResolver(result);
+            confirmActionResolver = null;
+        }
+    }
+
     function normalizeAnswerString(str) {
         if (!str) return '';
         return str.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '');
@@ -1301,8 +1326,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 清空重填事件绑定
-    resetTestBtn.addEventListener('click', () => {
-        if (confirm('确定要清空所有答案重新测试吗？')) {
+    testActionCancelBtn.addEventListener('click', () => {
+        closeTestActionConfirm(false);
+    });
+
+    testActionConfirmBtn.addEventListener('click', () => {
+        closeTestActionConfirm(true);
+    });
+
+    resetTestBtn.addEventListener('click', async () => {
+        const confirmed = await openTestActionConfirm('重新测试', '确定要清空当前页面答案并重新开始吗？');
+        if (confirmed) {
             currentTestGroups.forEach(groupObj => {
                 groupObj.words.forEach(wordObj => {
                     wordObj.userAnswer = '';
@@ -1316,8 +1350,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    exitTestBtn.addEventListener('click', () => {
-        if (confirm('确定要退出检测吗？当前这一页的作答和本轮变动将不保存，并返回主页面。')) {
+    exitTestBtn.addEventListener('click', async () => {
+        const confirmed = await openTestActionConfirm('退出检测', '确定要退出检测吗？当前这一页的作答不会保留，并返回主页面。');
+        if (confirmed) {
             leaveCurrentTest(true);
         }
     });
