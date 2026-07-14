@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.13';
+    const APP_VERSION = 'v26.7.14';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const MAIMEMO_RESPONSE_WEIGHTS = {
         FORGET: 3,
@@ -1825,8 +1825,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .from('leaderboard')
                 .select('*')
                 .order('accuracy', { ascending: false })
-                .order('total_words', { ascending: false })
-                .limit(20);
+                .limit(10);
 
             if (error) throw error;
 
