@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.15';
+    const APP_VERSION = 'v26.7.16';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const MAIMEMO_RESPONSE_WEIGHTS = {
         FORGET: 3,
@@ -768,6 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 wordGroups = parsed.wordGroups || [];
                 systemState = parsed.systemState || systemState;
                 maimemoConfig = parsed.maimemoConfig || maimemoConfig;
+                maimemoWordStatusMap = parsed.maimemoWordStatusMap || {};
 
                 // 核心改进：即使有缓存，也要检查代码中的词库是否有更新
                 syncWithCodeSource();
@@ -814,6 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 wordGroups: wordGroups,
                 systemState: systemState,
                 maimemoConfig: maimemoConfig,
+                maimemoWordStatusMap: maimemoWordStatusMap,
                 version: '3.0'
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
@@ -1449,7 +1451,8 @@ document.addEventListener('DOMContentLoaded', () => {
             wordGroups: wordGroups,
             systemState: systemState,
             maimemoConfig: maimemoConfig,
-            version: '3.5',
+            maimemoWordStatusMap: maimemoWordStatusMap,
+            version: '3.6',
             exportDate: new Date().toISOString()
         }, null, 2);
 
@@ -1477,7 +1480,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!imported.wordGroups) throw new Error('无效的备份文件');
 
                     // 执行智能合并与重置逻辑
-                    mergeAndResetData(imported.wordGroups, imported.systemState, imported.maimemoConfig);
+                    mergeAndResetData(
+                        imported.wordGroups,
+                        imported.systemState,
+                        imported.maimemoConfig,
+                        imported.maimemoWordStatusMap
+                    );
 
                     alert('数据恢复成功！已根据新词插入逻辑自动调整进度。');
                     location.reload();
@@ -1490,12 +1498,13 @@ document.addEventListener('DOMContentLoaded', () => {
         input.click();
     });
 
-    function mergeAndResetData(newGroups, newState, newConfig) {
+    function mergeAndResetData(newGroups, newState, newConfig, newWordStatusMap) {
         // 如果是完全替换模式
         if (confirm('是否完全替换当前数据？(选择“取消”将尝试合并新词组并保留旧进度)')) {
             wordGroups = newGroups;
             systemState = newState || systemState;
             maimemoConfig = newConfig || maimemoConfig;
+            maimemoWordStatusMap = newWordStatusMap || {};
             saveData();
             return;
         }
@@ -1527,6 +1536,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
+
+        if (newWordStatusMap && typeof newWordStatusMap === 'object') {
+            maimemoWordStatusMap = { ...maimemoWordStatusMap, ...newWordStatusMap };
+        }
 
         saveData();
     }
@@ -1692,6 +1705,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .map(([status, count]) => `${status} ${count} 个`)
                 .join('，');
 
+            saveData();
             alert(`同步成功！已读取墨墨学习状态 ${studyRecords.length} 个，并映射本地词组 ${affectedGroups.length} 组。${summaryText ? `\n\n状态分布：${summaryText}` : ''}`);
         } catch (err) {
             console.error('墨墨同步失败:', err);
