@@ -1085,8 +1085,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    startMonthlyBtn.addEventListener('click', () => {
-        if (confirm('开始月度总测？A 池所有词组将强制回炉唤醒，并从总池中抽取约 60% 词组进行大规模筛查。')) {
+    startMonthlyBtn.addEventListener('click', async () => {
+        const confirmed = await openTestActionConfirm('月度总测', '确定开始月度总测吗？A 池会回炉唤醒，并从总池抽取约 60% 词组进行筛查。');
+        if (confirmed) {
             currentTestSnapshot = createCurrentTestSnapshot();
             currentTestGroups = generateMonthlyTest();
             currentTestMode = 'monthly';
@@ -1676,8 +1677,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const confirmed = await openTestActionConfirm(
+            '墨墨API',
+            '确定开始同步墨墨弱点吗？系统会读取你在墨墨中的薄弱单词，并提高本地对应词组的抽取权重。'
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
         syncMaimemoBtn.disabled = true;
-        syncMaimemoBtn.textContent = '🔄 同步中...';
+        syncMaimemoBtn.innerHTML = '<span class="leaderboard-btn-icon">🔄</span><span>同步中...</span>';
 
         try {
             const localWords = [...new Set(
@@ -1726,7 +1736,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(errorMsg);
         } finally {
             syncMaimemoBtn.disabled = false;
-            syncMaimemoBtn.textContent = '🔄 同步墨墨弱点';
+            syncMaimemoBtn.innerHTML = '<span class="leaderboard-btn-icon">🔄</span><span>墨墨API</span>';
         }
     });
 

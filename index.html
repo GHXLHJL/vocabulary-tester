@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>小七哥单词自测工具</title>
-    <link rel="stylesheet" href="style.css?v=26.7.9">
+    <link rel="stylesheet" href="style.css?v=26.7.10">
 </head>
 
 <body>
@@ -31,8 +31,10 @@
                             <span style="margin-right: 8px;">🏠</span> 学习仪表盘
                         </h3>
                         <div id="stats-summary" class="stats-summary">
-                            <div class="stats-line">总池: <strong id="main-pool-count" style="color: #333;">0</strong> 组</div>
-                            <div class="stats-line">A池: <strong id="a-pool-count" style="color: #28a745;">0</strong> 组</div>
+                            <div class="stats-line">总池: <strong id="main-pool-count" style="color: #333;">0</strong> 组
+                            </div>
+                            <div class="stats-line">A池: <strong id="a-pool-count" style="color: #28a745;">0</strong> 组
+                            </div>
                         </div>
                     </div>
                     <div class="dashboard-tools">
@@ -72,10 +74,6 @@
                     <button id="start-monthly-btn" class="btn-info">🚀 月度总测</button>
                 </div>
 
-                <div class="dashboard-footer">
-                    <button id="export-data-btn" class="btn-secondary-sm">💾 导出备份</button>
-                    <button id="import-data-btn" class="btn-secondary-sm">📂 导入恢复</button>
-                </div>
             </div>
 
             <div class="tester-header">
@@ -166,6 +164,13 @@
                         </label>
                     </div>
                 </div>
+                <div class="settings-group">
+                    <label>数据管理</label>
+                    <div class="settings-data-actions">
+                        <button id="export-data-btn" class="btn-secondary-sm settings-action-btn">💾 导出备份</button>
+                        <button id="import-data-btn" class="btn-secondary-sm settings-action-btn">📂 导入恢复</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -213,7 +218,7 @@
 
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=26.7.9"></script>
+    <script src="app.js?v=26.7.10"></script>
 </body>
 
 </html>

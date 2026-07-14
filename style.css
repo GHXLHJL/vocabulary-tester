@@ -414,6 +414,19 @@ h2 {
     font-size: 14px;
 }
 
+.settings-data-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.settings-action-btn {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
 .input-with-action {
     display: flex;
     gap: 10px;
