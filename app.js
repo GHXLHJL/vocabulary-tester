@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingNavList = document.getElementById('floating-nav-list');
     const floatingNavOverlay = document.getElementById('floating-nav-overlay');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v26.7.2'; // 升级到 v3.0
+    const STORAGE_KEY = 'vocabulary_tester_data_v26.7.3'; // 升级到 v3.0
 
     // 优化方案参数配置
     const SETTINGS = {
@@ -597,6 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 104, word: 'bid', expectedAnswer: '出价/努力', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 104, word: 'hid(hide)', expectedAnswer: '躲藏', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 104, word: 'rid', expectedAnswer: '摆脱/除去', userAnswer: '', isCorrect: null },
+
 
 
 
@@ -1433,40 +1434,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ==== 墨墨 API 同步逻辑 (多代理增强版) ====
+    // ==== 墨墨 API 同步逻辑 (终极增强版) ====
     async function fetchWithProxy(targetUrl, token) {
-        // 备选代理列表：这些代理通常能更好地转发 Authorization 头
-        const proxies = [
-            url => `https://thingproxy.freeboard.io/fetch/${url}`,
-            url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-            url => `https://corsproxy.io/?${url}`
-        ];
-
-        let lastError = null;
-        for (const proxyFn of proxies) {
-            try {
-                const finalUrl = proxyFn(targetUrl);
-                console.log(`正在尝试通过代理访问: ${finalUrl}`);
-                
-                const response = await fetch(finalUrl, {
-                    method: 'GET',
-                    headers: { 
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    },
-                    mode: 'cors'
-                });
-                
-                if (response.ok) return response;
-                if (response.status === 401) throw new Error('Token 无效');
-                if (response.status === 403) throw new Error('代理服务器拒绝访问');
-                console.warn(`代理服务器返回状态码: ${response.status}，尝试下一个...`);
-            } catch (e) {
-                lastError = e;
-                continue;
-            }
+        // 使用 allorigins 的 hex/raw 模式，这是目前最稳妥的跨域方案
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+        
+        try {
+            const response = await fetch(proxyUrl, {
+                method: 'GET',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (response.ok) return response;
+            if (response.status === 401) throw new Error('Token 无效');
+            throw new Error(`服务器响应错误: ${response.status}`);
+        } catch (e) {
+            console.error('代理访问失败:', e);
+            throw e;
         }
-        throw lastError || new Error('所有代理均失效');
     }
 
     async function fetchWordInterpretation(word) {
@@ -1475,13 +1463,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (maimemoInterpretationCache[lowerWord]) return;
 
         try {
-            const targetUrl = `https://open.maimemo.com/open/api/v1/interpretation?word=${lowerWord}`;
+            // 修正：使用官方标准 vocabulary 接口
+            const targetUrl = `https://open.maimemo.com/open/api/v1/vocabulary?spellings[]=${lowerWord}`;
             const response = await fetchWithProxy(targetUrl, maimemoConfig.token);
             
             const data = await response.json();
-            if (data.interpretations) {
-                maimemoInterpretationCache[lowerWord] = data.interpretations.map(i => i.meaning);
-                saveData();
+            // 墨墨 vocabulary 接口返回的是数组
+            if (data && data.length > 0) {
+                const vocab = data[0];
+                if (vocab.interpretations) {
+                    maimemoInterpretationCache[lowerWord] = vocab.interpretations.map(i => i.meaning);
+                    saveData();
+                }
             }
         } catch (e) {
             console.error(`获取单词 ${word} 释义失败`, e);
