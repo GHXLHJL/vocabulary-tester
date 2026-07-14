@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>小七哥单词自测工具</title>
-    <link rel="stylesheet" href="style.css?v=26.7.3">
+    <link rel="stylesheet" href="style.css?v=26.7.4">
 </head>
 
 <body>
@@ -30,6 +30,7 @@
                         <span style="margin-right: 8px;">🏠</span> 学习仪表盘
                     </h3>
                     <div style="display: flex; align-items: center; gap: 15px;">
+                        <button id="view-leaderboard-btn" class="btn-icon" title="查看排行榜">🏆</button>
                         <div id="stats-summary" class="stats-summary">
                             总池: <strong id="main-pool-count" style="color: #333;">0</strong> 组 |
                             A池: <strong id="a-pool-count" style="color: #28a745;">0</strong> 组
@@ -129,6 +130,11 @@
             </div>
             <div class="modal-body">
                 <div class="settings-group">
+                    <label for="user-nickname">我的昵称 (用于排行榜)</label>
+                    <input type="text" id="user-nickname" placeholder="输入你的昵称..." maxlength="10"
+                        style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                </div>
+                <div class="settings-group">
                     <label for="maimemo-token">墨墨 API Token</label>
                     <div class="input-with-action">
                         <input type="password" id="maimemo-token" placeholder="在此输入你的 Token...">
@@ -153,7 +159,37 @@
         </div>
     </div>
 
-    <script src="app.js?v=26.7.3"></script>
+    <!-- 新增：排行榜面板遮罩层 -->
+    <div id="leaderboard-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>🏆 学习排行榜 (Supabase 驱动)</h3>
+                <button id="close-leaderboard-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="leaderboard-loading" style="text-align: center; padding: 20px;">加载中...</div>
+                <div id="leaderboard-content" style="display: none;">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>昵称</th>
+                                <th>刷词数</th>
+                                <th>正确率</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-tbody">
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js?v=26.7.4"></script>
 </body>
 
 </html>

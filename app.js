@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsModal = document.getElementById('settings-modal');
     const closeSettingsBtn = document.getElementById('close-settings-btn');
     const maimemoTokenInput = document.getElementById('maimemo-token');
+    const userNicknameInput = document.getElementById('user-nickname');
     const saveTokenBtn = document.getElementById('save-token-btn');
     const syncWeaknessToggle = document.getElementById('sync-weakness-toggle');
     const autoExpandToggle = document.getElementById('auto-expand-interpretation');
@@ -42,7 +43,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingNavList = document.getElementById('floating-nav-list');
     const floatingNavOverlay = document.getElementById('floating-nav-overlay');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v26.7.3'; // 升级到 v3.0
+    // 排行榜 DOM
+    const viewLeaderboardBtn = document.getElementById('view-leaderboard-btn');
+    const leaderboardModal = document.getElementById('leaderboard-modal');
+    const closeLeaderboardBtn = document.getElementById('close-leaderboard-btn');
+    const leaderboardLoading = document.getElementById('leaderboard-loading');
+    const leaderboardContent = document.getElementById('leaderboard-content');
+    const leaderboardTbody = document.getElementById('leaderboard-tbody');
+
+    // Supabase 配置
+    const SUPABASE_URL = 'https://iebdkqswcyuyqsusmocn.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_5JmvfLkKx-Nmv9Dts9OvDw_2kOXu5qn';
+    let supabase = null;
+
+    if (window.supabase) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+
+    const STORAGE_KEY = 'vocabulary_tester_data_v26.7.4'; // 升级到 v3.0
 
     // 优化方案参数配置
     const SETTINGS = {
@@ -61,7 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let systemState = {
         lastDailyTestDate: null,
         lastWeeklyReviewDate: null,
-        lastMonthlyTestDate: null
+        lastMonthlyTestDate: null,
+        userId: null,
+        nickname: '考研战士'
     };
     let maimemoConfig = {
         token: '',
@@ -615,6 +635,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
     ];
 
     function setBackToTopVisible(isVisible) {
@@ -725,6 +746,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // 同步设置界面
                 maimemoTokenInput.value = maimemoConfig.token || '';
+                userNicknameInput.value = systemState.nickname || '考研战士';
                 syncWeaknessToggle.checked = !!maimemoConfig.syncWeakness;
                 autoExpandToggle.checked = !!maimemoConfig.autoExpand;
 
@@ -1222,6 +1244,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             testSummary.style.display = 'block';
             testSummary.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            // 上报成绩至 Supabase 排行榜
+            uploadScoreToSupabase(globalTotalCount, globalCorrectCount, accuracy, currentTestMode);
         }
     });
 
@@ -1295,16 +1320,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     saveTokenBtn.addEventListener('click', () => {
         const token = maimemoTokenInput.value.trim();
+        const nickname = userNicknameInput.value.trim();
+
         maimemoConfig.token = token;
         maimemoConfig.syncWeakness = syncWeaknessToggle.checked;
         maimemoConfig.autoExpand = autoExpandToggle.checked;
+
+        if (nickname) {
+            systemState.nickname = nickname;
+        }
 
         saveData();
 
         if (token) {
             alert('设置已保存！已启用墨墨 API 增强模式。');
         } else {
-            alert('设置已保存！当前未启用 Token，将使用本地模式。');
+            alert('设置已保存！');
         }
 
         settingsModal.classList.remove('open');
@@ -1434,25 +1465,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ==== 墨墨 API 同步逻辑 (终极增强版) ====
+    // ==== 墨墨 API 同步逻辑 (Supabase 代理版) ====
     async function fetchWithProxy(targetUrl, token) {
-        // 使用 allorigins 的 hex/raw 模式，这是目前最稳妥的跨域方案
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-        
+        // 如果 Supabase 已连接，优先使用 Supabase Edge Function 代理
+        if (supabase) {
+            const proxyFuncUrl = `${SUPABASE_URL}/functions/v1/maimemo-proxy`;
+            try {
+                const response = await fetch(proxyFuncUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url: targetUrl })
+                });
+
+                if (response.ok) return response;
+                if (response.status === 401) throw new Error('Token 无效');
+                throw new Error(`代理服务器响应错误: ${response.status}`);
+            } catch (e) {
+                console.warn('Supabase 代理失败，尝试备用方案:', e);
+            }
+        }
+
+        // 备用方案：使用 allorigins
+        const backupProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
         try {
-            const response = await fetch(proxyUrl, {
+            const response = await fetch(backupProxyUrl, {
                 method: 'GET',
-                headers: { 
+                headers: {
                     'Authorization': `Bearer ${token}`,
                     'Accept': 'application/json'
                 }
             });
-            
             if (response.ok) return response;
-            if (response.status === 401) throw new Error('Token 无效');
-            throw new Error(`服务器响应错误: ${response.status}`);
+            throw new Error(`备用代理响应错误: ${response.status}`);
         } catch (e) {
-            console.error('代理访问失败:', e);
+            console.error('所有代理均失败:', e);
             throw e;
         }
     }
@@ -1466,7 +1515,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 修正：使用官方标准 vocabulary 接口
             const targetUrl = `https://open.maimemo.com/open/api/v1/vocabulary?spellings[]=${lowerWord}`;
             const response = await fetchWithProxy(targetUrl, maimemoConfig.token);
-            
+
             const data = await response.json();
             // 墨墨 vocabulary 接口返回的是数组
             if (data && data.length > 0) {
@@ -1495,7 +1544,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetUrl = 'https://open.maimemo.com/open/api/v1/learning';
             const response = await fetchWithProxy(targetUrl, maimemoConfig.token);
             const data = await response.json();
-            
+
             // 过滤出薄弱单词 (status < 1 表示模糊或忘记)
             const weakWords = (data.learning || [])
                 .filter(item => item.status < 1)
@@ -1519,6 +1568,101 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             syncMaimemoBtn.disabled = false;
             syncMaimemoBtn.textContent = '🔄 同步墨墨弱点';
+        }
+    });
+
+    // ==== 排行榜逻辑 (Supabase 驱动) ====
+    async function uploadScoreToSupabase(total, correct, accuracy, mode) {
+        if (!supabase) return;
+
+        // 首次使用生成 UUID
+        if (!systemState.userId) {
+            systemState.userId = generateId();
+            saveData();
+        }
+
+        try {
+            const { error } = await supabase
+                .from('leaderboard')
+                .insert([
+                    {
+                        user_id: systemState.userId,
+                        nickname: systemState.nickname,
+                        total_words: total,
+                        correct_words: correct,
+                        accuracy: parseFloat(accuracy),
+                        test_mode: mode
+                    }
+                ]);
+
+            if (error) throw error;
+            console.log('成绩已成功上报至 Supabase 排行榜');
+        } catch (err) {
+            console.error('上报成绩失败:', err);
+        }
+    }
+
+    async function fetchLeaderboard() {
+        if (!supabase) return;
+
+        leaderboardLoading.style.display = 'block';
+        leaderboardContent.style.display = 'none';
+        leaderboardTbody.innerHTML = '';
+
+        try {
+            const { data, error } = await supabase
+                .from('leaderboard')
+                .select('*')
+                .order('accuracy', { ascending: false })
+                .order('total_words', { ascending: false })
+                .limit(20);
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                data.forEach((row, index) => {
+                    const tr = document.createElement('tr');
+
+                    // 排名逻辑
+                    let rankDisplay = index + 1;
+                    if (index === 0) rankDisplay = '🥇';
+                    else if (index === 1) rankDisplay = '🥈';
+                    else if (index === 2) rankDisplay = '🥉';
+
+                    tr.innerHTML = `
+                        <td>${rankDisplay}</td>
+                        <td>${row.nickname || '匿名战士'}</td>
+                        <td>${row.total_words}</td>
+                        <td class="accuracy-val">${row.accuracy}%</td>
+                    `;
+                    leaderboardTbody.appendChild(tr);
+                });
+            } else {
+                leaderboardTbody.innerHTML = '<tr><td colspan="4">暂无数据，快去测试吧！</td></tr>';
+            }
+
+            leaderboardLoading.style.display = 'none';
+            leaderboardContent.style.display = 'block';
+        } catch (err) {
+            console.error('获取排行榜失败:', err);
+            leaderboardTbody.innerHTML = '<tr><td colspan="4" style="color: red;">获取失败，请稍后重试</td></tr>';
+            leaderboardLoading.style.display = 'none';
+            leaderboardContent.style.display = 'block';
+        }
+    }
+
+    viewLeaderboardBtn.addEventListener('click', () => {
+        leaderboardModal.classList.add('open');
+        fetchLeaderboard();
+    });
+
+    closeLeaderboardBtn.addEventListener('click', () => {
+        leaderboardModal.classList.remove('open');
+    });
+
+    leaderboardModal.addEventListener('click', (e) => {
+        if (e.target === leaderboardModal) {
+            leaderboardModal.classList.remove('open');
         }
     });
 

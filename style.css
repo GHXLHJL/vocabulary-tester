@@ -333,6 +333,41 @@ h2 {
     color: #333;
 }
 
+/* 排行榜表格样式 */
+.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+    padding: 12px 8px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+}
+
+.leaderboard-table th {
+    background-color: #f8f9fa;
+    color: #666;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.leaderboard-table td {
+    font-size: 14px;
+    color: #333;
+}
+
+.leaderboard-table tr:nth-child(1) td:first-child { color: #ffd700; font-weight: bold; font-size: 18px; } /* 金牌 */
+.leaderboard-table tr:nth-child(2) td:first-child { color: #c0c0c0; font-weight: bold; font-size: 16px; } /* 银牌 */
+.leaderboard-table tr:nth-child(3) td:first-child { color: #cd7f32; font-weight: bold; font-size: 15px; } /* 铜牌 */
+
+.leaderboard-table .accuracy-val {
+    color: #007bff;
+    font-weight: bold;
+}
+
 /* 测试界面页眉 */
 .tester-header {
     display: none;
