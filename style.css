@@ -519,6 +519,10 @@ h2 {
     margin-bottom: 15px;
 }
 
+.tester-header.after-summary {
+    margin-top: 15px;
+}
+
 .action-buttons {
     display: flex;
     gap: 15px;

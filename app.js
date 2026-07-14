@@ -1064,6 +1064,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentTestMode = 'daily';
             if (currentTestGroups.length > 0) {
                 resetCurrentTestAnswers();
+                updateTestActionPlacement(false);
                 renderTable();
                 dashboard.style.display = 'none';
             }
@@ -1077,6 +1078,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentTestMode = 'weekly';
             if (currentTestGroups.length > 0) {
                 resetCurrentTestAnswers();
+                updateTestActionPlacement(false);
                 renderTable();
                 dashboard.style.display = 'none';
             }
@@ -1090,6 +1092,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentTestMode = 'monthly';
             if (currentTestGroups.length > 0) {
                 resetCurrentTestAnswers();
+                updateTestActionPlacement(false);
                 renderTable();
                 dashboard.style.display = 'none';
             }
@@ -1123,12 +1126,26 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTestGroups = [];
         currentTestMode = null;
         testSummary.style.display = 'none';
+        updateTestActionPlacement(false);
         setFloatingNavVisible(false);
         setFloatingNavOpen(false);
         dashboard.style.display = 'block';
         updateDashboardUI();
         renderTable();
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateTestActionPlacement(placeAfterSummary) {
+        const testerParent = testerHeader.parentNode;
+        if (!testerParent) return;
+
+        if (placeAfterSummary) {
+            testSummary.insertAdjacentElement('afterend', testerHeader);
+            testerHeader.classList.add('after-summary');
+        } else {
+            testerParent.insertBefore(testerHeader, testSummary);
+            testerHeader.classList.remove('after-summary');
+        }
     }
 
     // 更新行的样式（正确/错误背景色）
@@ -1318,6 +1335,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 setFloatingNavVisible(false);
             }
             testSummary.style.display = 'block';
+            updateTestActionPlacement(true);
             testSummary.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             // 上报成绩至 Supabase 排行榜
@@ -1346,6 +1364,7 @@ document.addEventListener('DOMContentLoaded', () => {
             saveData();
             renderTable();
             testSummary.style.display = 'none';
+            updateTestActionPlacement(false);
             setFloatingNavVisible(false);
         }
     });
