@@ -1484,7 +1484,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==== 墨墨 API 同步逻辑 (Supabase 代理版) ====
-    async function fetchWithProxy(targetUrl, token) {
+    async function fetchWithProxy(targetUrl, token, options = {}) {
+        const {
+            method = 'GET',
+            headers = {},
+            body = null
+        } = options;
+
         // 如果 Supabase 已连接，优先使用 Supabase Edge Function 代理
         if (supabase) {
             const proxyFuncUrl = `${SUPABASE_URL}/functions/v1/maimemo-proxy`;
@@ -1496,7 +1502,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         'apikey': SUPABASE_KEY,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ url: targetUrl })
+                    body: JSON.stringify({ url: targetUrl, method, headers, body })
                 });
 
                 if (response.ok) return response;
@@ -1509,6 +1515,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) {
                 console.warn('Supabase 代理失败，尝试备用方案:', e);
             }
+        }
+
+        if (method !== 'GET') {
+            throw new Error('当前请求需要 Supabase 代理支持，请先重新部署云函数');
         }
 
         // 备用方案：使用 allorigins
@@ -1535,16 +1545,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if (maimemoInterpretationCache[lowerWord]) return;
 
         try {
-            // 修正：使用官方标准 vocabulary 接口
-            const targetUrl = `https://open.maimemo.com/open/api/v1/vocabulary?spellings[]=${lowerWord}`;
-            const response = await fetchWithProxy(targetUrl, maimemoConfig.token);
+            const vocabResponse = await fetchWithProxy(
+                `https://open.maimemo.com/open/api/v1/vocabulary?spelling=${encodeURIComponent(lowerWord)}`,
+                maimemoConfig.token
+            );
+            const vocabData = await vocabResponse.json();
+            const voc = vocabData?.data?.voc;
 
-            const data = await response.json();
-            // 墨墨 vocabulary 接口返回的是数组
-            if (data && data.length > 0) {
-                const vocab = data[0];
-                if (vocab.interpretations) {
-                    maimemoInterpretationCache[lowerWord] = vocab.interpretations.map(i => i.meaning);
+            if (!voc || !voc.id) {
+                return;
+            }
+
+            const interpretationResponse = await fetchWithProxy(
+                `https://open.maimemo.com/open/api/v1/interpretations?voc_id=${encodeURIComponent(voc.id)}`,
+                maimemoConfig.token
+            );
+            const interpretationData = await interpretationResponse.json();
+
+            if (Array.isArray(interpretationData?.data?.interpretations)) {
+                const meanings = interpretationData.data.interpretations
+                    .map(item => item.interpretation)
+                    .filter(Boolean);
+
+                if (meanings.length > 0) {
+                    maimemoInterpretationCache[lowerWord] = meanings;
                     saveData();
                 }
             }
@@ -1564,16 +1588,31 @@ document.addEventListener('DOMContentLoaded', () => {
         syncMaimemoBtn.textContent = '🔄 同步中...';
 
         try {
-            const targetUrl = 'https://open.maimemo.com/open/api/v1/learning';
-            const response = await fetchWithProxy(targetUrl, maimemoConfig.token);
+            const localWords = [...new Set(
+                wordGroups.flatMap(group => group.words.map(word => word.word.toLowerCase()))
+            )];
+
+            const response = await fetchWithProxy(
+                'https://open.maimemo.com/open/api/v1/study/query_study_records',
+                maimemoConfig.token,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: {
+                        spellings: localWords,
+                        limit: Math.min(localWords.length, 1000)
+                    }
+                }
+            );
             const data = await response.json();
 
             if (data.error) throw new Error(data.error);
 
-            // 过滤出薄弱单词 (status < 1 表示模糊或忘记)
-            const weakWords = (data.learning || [])
-                .filter(item => item.status < 1)
-                .map(item => item.word.toLowerCase());
+            const weakWords = (data?.data?.records || [])
+                .filter(item => ['VAGUE', 'FORGET'].includes(item.last_response))
+                .map(item => item.voc_spelling.toLowerCase());
 
             maimemoWeaknessMap = new Set(weakWords);
 

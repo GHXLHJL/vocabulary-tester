@@ -13,8 +13,12 @@ serve(async (req) => {
   }
 
   try {
-    const { url } = await req.json()
-    const authHeader = req.headers.get('x-maimemo-token') || req.headers.get('Authorization')
+    const { url, method = 'GET', headers = {}, body } = await req.json()
+    const tokenHeader = req.headers.get('x-maimemo-token')
+    const authHeader = req.headers.get('Authorization')
+    const upstreamAuth = tokenHeader
+      ? `Bearer ${tokenHeader}`
+      : (authHeader || '')
 
     if (!url) {
       return new Response(JSON.stringify({ error: 'Missing target URL' }), {
@@ -23,15 +27,20 @@ serve(async (req) => {
       })
     }
 
-    console.log(`Proxying request to: ${url}`)
+    console.log(`Proxying request to: ${method} ${url}`)
 
     const response = await fetch(url, {
-      method: 'GET',
+      method,
       headers: {
-        'Authorization': authHeader || '',
-        'Content-Type': 'application/json',
+        'Authorization': upstreamAuth,
         'Accept': 'application/json',
+        ...headers,
       },
+      body: method === 'GET' || method === 'HEAD' || body == null
+        ? undefined
+        : typeof body === 'string'
+          ? body
+          : JSON.stringify(body),
     })
 
     const data = await response.text()
