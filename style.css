@@ -93,7 +93,7 @@ h2 {
     color: #2c3e50;
     display: flex;
     align-items: center;
-    font-size: 22px;
+    font-size: 24px;
 }
 
 .dashboard-header .stats-summary {
@@ -1049,7 +1049,7 @@ td input[type="text"][readonly]:focus {
 
     .dashboard-header h3 {
         justify-content: flex-start;
-        font-size: 18px;
+        font-size: 20px;
         padding-top: 4px;
     }
 
