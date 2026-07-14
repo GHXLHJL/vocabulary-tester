@@ -9,6 +9,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const summaryAccuracy = document.getElementById('summary-accuracy');
     const backToTopBtn = document.getElementById('back-to-top-btn');
 
+    // 仪表盘 DOM
+    const dashboard = document.getElementById('dashboard');
+    const mainPoolCount = document.getElementById('main-pool-count');
+    const aPoolCount = document.getElementById('a-pool-count');
+    const dailyStatus = document.getElementById('daily-status');
+    const weeklyStatus = document.getElementById('weekly-status');
+    const monthlyStatus = document.getElementById('monthly-status');
+    const startDailyBtn = document.getElementById('start-daily-btn');
+    const startWeeklyBtn = document.getElementById('start-weekly-btn');
+    const startMonthlyBtn = document.getElementById('start-monthly-btn');
+    const exportDataBtn = document.getElementById('export-data-btn');
+    const importDataBtn = document.getElementById('import-data-btn');
+    const syncMaimemoBtn = document.getElementById('sync-maimemo-btn');
+    const testerHeader = document.querySelector('.tester-header');
+    const wordTable = document.getElementById('word-table');
+
+    // 设置面板 DOM
+    const settingsToggleBtn = document.getElementById('settings-toggle-btn');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeSettingsBtn = document.getElementById('close-settings-btn');
+    const maimemoTokenInput = document.getElementById('maimemo-token');
+    const saveTokenBtn = document.getElementById('save-token-btn');
+    const syncWeaknessToggle = document.getElementById('sync-weakness-toggle');
+    const autoExpandToggle = document.getElementById('auto-expand-interpretation');
+
     // 悬浮错题导航相关 DOM
     const floatingNavContainer = document.getElementById('floating-nav-container');
     const floatingNavToggle = document.getElementById('floating-nav-toggle');
@@ -16,16 +41,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingNavPanel = document.getElementById('floating-nav-panel');
     const floatingNavList = document.getElementById('floating-nav-list');
     const floatingNavOverlay = document.getElementById('floating-nav-overlay');
-    const appVersionDisplay = document.getElementById('app-version-display');
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v26.4.35';
+    const STORAGE_KEY = 'vocabulary_tester_data_v26.7.1'; // 升级到 v3.0
+
+    // 优化方案参数配置
+    const SETTINGS = {
+        dailyDrawCount: 30,      // 每日抽取词组数
+        minIntervalDays: 2,      // 抽题最小间隔
+        graduationThreshold: 0.8, // 毕业正确率阈值 (最近3次平均)
+        minSingleRate: 0.6,      // 毕业最低单次线
+        weeklyReviewRatio: 0.2,   // 周复盘抽取比例
+        weeklyDegradation: 0.7,   // 周复盘退化线
+        monthlyDegradation: 0.6,  // 月度总测退化线
+        awakenDays: 30,          // A池强制唤醒周期
+        stuckDays: 7             // 防卡死天数
+    };
+
+    let wordGroups = []; // 核心数据：词组池
+    let systemState = {
+        lastDailyTestDate: null,
+        lastWeeklyReviewDate: null,
+        lastMonthlyTestDate: null
+    };
+    let maimemoConfig = {
+        token: '',
+        syncWeakness: true,
+        autoExpand: true
+    };
+    let maimemoWeaknessMap = new Set(); // 缓存墨墨中的薄弱单词
+    let maimemoInterpretationCache = {}; // 缓存墨墨释义： { word: [meaning1, meaning2] }
+    let currentTestMode = null; // null | 'daily' | 'weekly' | 'monthly'
+    let currentTestGroups = []; // 当前正在测试的词组引用
+
+    const appVersionDisplay = document.getElementById('app-version-display');
 
     // 在左上角显示当前版本号
     if (appVersionDisplay) {
-        const versionMatch = STORAGE_KEY.match(/_v([\d\.]+)$/);
-        if (versionMatch) {
-            appVersionDisplay.textContent = `Version: v${versionMatch[1]}`;
-        }
+        appVersionDisplay.textContent = `Version: v3.0.0 (Mem-Enhanced)`;
     }
 
     // 预置部分初始词库
@@ -560,9 +612,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    ];
 
-    let words = [];
+    ];
 
     function setBackToTopVisible(isVisible) {
         backToTopBtn.classList.toggle('is-visible', isVisible);
@@ -586,22 +637,61 @@ document.addEventListener('DOMContentLoaded', () => {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
 
-    function createDefaultWords() {
-        return defaultWords.map(word => ({
-            ...word,
-            errorCount: 0 // 初始化错误次数为 0
-        }));
+    function createDefaultWordGroups() {
+        const groups = {};
+        defaultWords.forEach(word => {
+            const gid = word.group || 999;
+            if (!groups[gid]) {
+                groups[gid] = {
+                    groupId: gid,
+                    words: [],
+                    pool: 'main',
+                    correctRatesHistory: [],
+                    tier: 'new',
+                    lastTestDate: null,
+                    enteredAPoolDate: null,
+                    consecutiveQualified: 0
+                };
+            }
+            groups[gid].words.push({
+                id: word.id || generateId(),
+                word: word.word,
+                expectedAnswer: word.expectedAnswer,
+                userAnswer: '',
+                isCorrect: null,
+                errorCount: 0
+            });
+        });
+        return Object.values(groups);
     }
 
-    function isValidStoredWords(data) {
-        return Array.isArray(data) && data.every(word =>
-            word &&
-            typeof word.word === 'string' &&
-            typeof word.expectedAnswer === 'string' &&
-            Object.prototype.hasOwnProperty.call(word, 'userAnswer') &&
-            Object.prototype.hasOwnProperty.call(word, 'isCorrect') &&
-            Object.prototype.hasOwnProperty.call(word, 'errorCount')
-        );
+    // 从旧格式迁移数据
+    function migrateFromV2(oldWords) {
+        const groups = {};
+        oldWords.forEach(word => {
+            const gid = word.group || 999;
+            if (!groups[gid]) {
+                groups[gid] = {
+                    groupId: gid,
+                    words: [],
+                    pool: 'main',
+                    correctRatesHistory: [],
+                    tier: 'new',
+                    lastTestDate: null,
+                    enteredAPoolDate: null,
+                    consecutiveQualified: 0
+                };
+            }
+            groups[gid].words.push({
+                id: word.id || generateId(),
+                word: word.word,
+                expectedAnswer: word.expectedAnswer,
+                userAnswer: word.userAnswer || '',
+                isCorrect: word.isCorrect,
+                errorCount: word.errorCount || 0
+            });
+        });
+        return Object.values(groups);
     }
 
     let storageUnavailableNotified = false;
@@ -616,99 +706,153 @@ document.addEventListener('DOMContentLoaded', () => {
     // 从 LocalStorage 加载数据
     function loadData() {
         try {
-            const data = localStorage.getItem(STORAGE_KEY);
-            if (!data) {
-                words = createDefaultWords();
-                saveData();
+            // 加载释义缓存
+            const cacheData = localStorage.getItem('maimemo_interpretation_cache');
+            if (cacheData) maimemoInterpretationCache = JSON.parse(cacheData);
+
+            // 尝试加载新格式 v3.0
+            const v3Data = localStorage.getItem(STORAGE_KEY);
+            if (v3Data) {
+                const parsed = JSON.parse(v3Data);
+                wordGroups = parsed.wordGroups || [];
+                systemState = parsed.systemState || systemState;
+                maimemoConfig = parsed.maimemoConfig || maimemoConfig;
+
+                // 核心改进：即使有缓存，也要检查代码中的词库是否有更新
+                syncWithCodeSource();
+
+                // 同步设置界面
+                maimemoTokenInput.value = maimemoConfig.token || '';
+                syncWeaknessToggle.checked = !!maimemoConfig.syncWeakness;
+                autoExpandToggle.checked = !!maimemoConfig.autoExpand;
+
+                updateDashboardUI();
                 return;
             }
 
-            const parsedData = JSON.parse(data);
-            if (isValidStoredWords(parsedData)) {
-                words = parsedData;
-            } else {
-                words = createDefaultWords();
-                saveData();
-            }
-        } catch (error) {
-            const isStorageAccessError =
-                error && (
-                    error.name === 'SecurityError' ||
-                    error.name === 'QuotaExceededError'
-                );
-
-            if (isStorageAccessError) {
-                warnStorageUnavailable(error);
-            } else {
-                console.warn('本地缓存数据损坏，已自动恢复默认词库。', error);
+            // 尝试从旧版本 v26.4.35 迁移
+            const oldKey = 'vocabulary_tester_data_v26.4.35';
+            const oldData = localStorage.getItem(oldKey);
+            if (oldData) {
+                try {
+                    const parsedOld = JSON.parse(oldData);
+                    wordGroups = migrateFromV2(parsedOld);
+                    saveData();
+                    updateDashboardUI();
+                    return;
+                } catch (e) {
+                    console.error('迁移旧数据失败', e);
+                }
             }
 
-            words = createDefaultWords();
+            // 无数据则初始化
+            wordGroups = createDefaultWordGroups();
             saveData();
+            updateDashboardUI();
+        } catch (error) {
+            warnStorageUnavailable(error);
+            wordGroups = createDefaultWordGroups();
+            updateDashboardUI();
         }
     }
 
     // 保存数据到 LocalStorage
     function saveData() {
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
+            // 保存释义缓存
+            localStorage.setItem('maimemo_interpretation_cache', JSON.stringify(maimemoInterpretationCache));
+
+            const dataToSave = {
+                wordGroups: wordGroups,
+                systemState: systemState,
+                maimemoConfig: maimemoConfig,
+                version: '3.0'
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
         } catch (error) {
             warnStorageUnavailable(error);
         }
     }
 
+    // 更新仪表盘显示
+    function updateDashboardUI() {
+        const mainPool = wordGroups.filter(g => g.pool === 'main');
+        const aPool = wordGroups.filter(g => g.pool === 'a');
+
+        mainPoolCount.textContent = mainPool.length;
+        aPoolCount.textContent = aPool.length;
+
+        const today = new Date().toLocaleDateString();
+
+        dailyStatus.textContent = systemState.lastDailyTestDate === today ? '已完成' : '未开始';
+        dailyStatus.style.color = systemState.lastDailyTestDate === today ? '#28a745' : '#666';
+
+        // 每周/月逻辑简化显示
+        weeklyStatus.textContent = systemState.lastWeeklyReviewDate ? `上次:${systemState.lastWeeklyReviewDate}` : '待进行';
+        monthlyStatus.textContent = systemState.lastMonthlyTestDate ? `上次:${systemState.lastMonthlyTestDate}` : '待进行';
+    }
+
     // 渲染表格内容
     function renderTable() {
         wordTbody.innerHTML = '';
-        let lastGroup = null;
 
-        words.forEach((wordObj, index) => {
-            // 如果存在 group 属性且与上一个不同，则准备插入新的模组分隔行
-            if (wordObj.group !== undefined && wordObj.group !== lastGroup) {
-                const currentGroupTr = document.createElement('tr');
-                currentGroupTr.className = 'group-separator';
-                currentGroupTr.id = `module-${wordObj.group}`;
+        // 异步静默抓取墨墨释义（如果开启）
+        if (maimemoConfig.token && maimemoConfig.autoExpand) {
+            currentTestGroups.forEach(g => {
+                g.words.forEach(w => fetchWordInterpretation(w.word));
+            });
+        }
 
-                const separatorTd = document.createElement('td');
-                separatorTd.colSpan = 3; // 更新跨列数以匹配剩余的三列
+        // currentTestGroups 存储当前试卷中选中的词组
+        currentTestGroups.forEach((groupObj) => {
+            // 插入模组分隔行
+            const separatorTr = document.createElement('tr');
+            separatorTr.className = 'group-separator';
+            separatorTr.id = `module-${groupObj.groupId}`;
+            const separatorTd = document.createElement('td');
+            separatorTd.colSpan = 3;
+            const groupLabel = document.createElement('div');
+            groupLabel.className = 'group-label';
+            groupLabel.textContent = `▶ 模组: ${groupObj.groupId} (${groupObj.pool === 'a' ? 'A池' : '总池'})`;
+            separatorTd.appendChild(groupLabel);
+            separatorTr.appendChild(separatorTd);
+            wordTbody.appendChild(separatorTr);
 
-                const groupLabel = document.createElement('div');
-                groupLabel.className = 'group-label';
-                groupLabel.textContent = `▶ 模组: ${wordObj.group}`;
-                separatorTd.appendChild(groupLabel);
-
-                currentGroupTr.appendChild(separatorTd);
-                wordTbody.appendChild(currentGroupTr);
-
-                lastGroup = wordObj.group;
-            }
-
-            const tr = createRow(wordObj, index);
-            wordTbody.appendChild(tr);
+            // 插入该组内的所有单词行
+            groupObj.words.forEach((wordObj, wordIdx) => {
+                const tr = createRow(wordObj, groupObj, wordIdx);
+                wordTbody.appendChild(tr);
+            });
         });
+
+        if (currentTestGroups.length > 0) {
+            testerHeader.style.display = 'flex';
+            wordTable.style.display = 'table';
+        } else {
+            testerHeader.style.display = 'none';
+            wordTable.style.display = 'none';
+        }
     }
 
     // 创建单行表格内容
-    function createRow(wordObj, index) {
+    function createRow(wordObj, groupObj, wordIdx) {
         const tr = document.createElement('tr');
         updateRowAppearance(tr, wordObj);
 
         // 【英文单词】列
         const tdWord = document.createElement('td');
         tdWord.className = 'word-cell';
-
         const wordText = document.createElement('span');
         wordText.textContent = wordObj.word;
         tdWord.appendChild(wordText);
 
-        // 如果提交过且错误次数大于 0，则显示小红点角标
+        // 如果提交过且错误次数大于 0，则显示角标
         if (wordObj.isCorrect !== null && wordObj.errorCount > 0) {
             const errorBadge = document.createElement('sup');
             errorBadge.className = 'error-badge';
             errorBadge.textContent = wordObj.errorCount;
             tdWord.appendChild(errorBadge);
         }
-
         tr.appendChild(tdWord);
 
         // 【你的答案】列
@@ -716,41 +860,195 @@ document.addEventListener('DOMContentLoaded', () => {
         const inputAnswer = document.createElement('input');
         inputAnswer.type = 'text';
         inputAnswer.value = wordObj.userAnswer || '';
-        inputAnswer.placeholder = '输入中文释义...';
 
-        // 绑定 input 事件，实现实时保存（不验证）
+        // 提交后移除 placeholder
+        if (wordObj.isCorrect !== null) {
+            inputAnswer.placeholder = '';
+            inputAnswer.readOnly = true;
+            inputAnswer.tabIndex = -1;
+        } else {
+            inputAnswer.placeholder = '输入中文释义...';
+            inputAnswer.readOnly = false;
+        }
+
         inputAnswer.addEventListener('input', (e) => {
-            handleAnswerInput(index, e.target.value, tr);
+            wordObj.userAnswer = e.target.value;
+            wordObj.isCorrect = null;
+            saveData();
+            updateRowAppearance(tr, wordObj);
+            const tdMeaning = tr.querySelector('.meaning-col');
+            if (tdMeaning) tdMeaning.textContent = '';
         });
 
         tdAnswer.appendChild(inputAnswer);
         tr.appendChild(tdAnswer);
 
-        // 【中文释义】列（默认隐藏意思内容，提交后显示）
+        // 【中文释义】列
         const tdMeaning = document.createElement('td');
         tdMeaning.className = 'meaning-col';
-        tdMeaning.style.color = '#0056b3'; // 深蓝色，对比度更高，更清晰
-        tdMeaning.style.fontSize = '16px'; // 字号加大一码
-        tdMeaning.style.fontWeight = 'bold'; // 进一步加粗，提升可读性
 
-        // 只有提交过检测才显示中文释义，并且让答案区域变成展示态
         if (wordObj.isCorrect !== null) {
             tdMeaning.textContent = wordObj.expectedAnswer;
-            inputAnswer.readOnly = true;
-            inputAnswer.tabIndex = -1;
-            inputAnswer.setAttribute('aria-readonly', 'true');
-            inputAnswer.placeholder = '';
         } else {
             tdMeaning.textContent = '';
-            inputAnswer.readOnly = false;
-            inputAnswer.removeAttribute('tabindex');
-            inputAnswer.removeAttribute('aria-readonly');
-            inputAnswer.placeholder = '输入中文释义...';
         }
-
         tr.appendChild(tdMeaning);
 
         return tr;
+    }
+
+    // ==== 核心抽题算法 ====
+    function generateDailyTest() {
+        const today = new Date();
+        const availableGroups = wordGroups.filter(g => {
+            if (g.pool !== 'main') return false;
+            if (!g.lastTestDate) return true;
+
+            const lastDate = new Date(g.lastTestDate);
+            const diffDays = (today - lastDate) / (1000 * 60 * 60 * 24);
+
+            // 满足最小间隔约束，或者连续 7 天未被抽到强制进入
+            return diffDays >= SETTINGS.minIntervalDays || diffDays >= SETTINGS.stuckDays;
+        });
+
+        if (availableGroups.length === 0) {
+            alert('总池中没有满足间隔要求的词组，请休息一下或尝试其他模式！');
+            return [];
+        }
+
+        // 加权抽取
+        const weightedPool = [];
+        availableGroups.forEach(g => {
+            let weight = 1;
+
+            // 基础权重判定
+            if (g.tier === 'weak' || g.tier === 'new') weight = 3;
+            else if (g.tier === 'fuzzy') weight = 1;
+
+            // 墨墨 API 增强权重：如果组内有墨墨背错的词，权重翻倍 (x5)
+            if (maimemoConfig.syncWeakness && maimemoConfig.token) {
+                const hasMaimemoWeakness = g.words.some(w => maimemoWeaknessMap.has(w.word.toLowerCase()));
+                if (hasMaimemoWeakness) {
+                    weight = 5;
+                }
+            }
+
+            for (let i = 0; i < weight; i++) {
+                weightedPool.push(g);
+            }
+        });
+
+        // 随机抽取 30 组
+        const selected = [];
+        const count = Math.min(SETTINGS.dailyDrawCount, availableGroups.length);
+        const usedIndices = new Set();
+
+        while (selected.length < count && usedIndices.size < weightedPool.length) {
+            const idx = Math.floor(Math.random() * weightedPool.length);
+            const group = weightedPool[idx];
+
+            // 确保不重复抽取同一个 group
+            if (!selected.includes(group)) {
+                selected.push(group);
+            }
+            usedIndices.add(idx);
+        }
+
+        return selected;
+    }
+
+    function generateWeeklyReview() {
+        const aPool = wordGroups.filter(g => g.pool === 'a');
+        if (aPool.length === 0) {
+            alert('A池（熟练池）目前为空，请先完成每日轻测以积累熟练词！');
+            return [];
+        }
+
+        const count = Math.max(5, Math.floor(aPool.length * SETTINGS.weeklyReviewRatio));
+        const selected = [];
+        const tempPool = [...aPool];
+
+        for (let i = 0; i < Math.min(count, aPool.length); i++) {
+            const idx = Math.floor(Math.random() * tempPool.length);
+            selected.push(tempPool.splice(idx, 1)[0]);
+        }
+        return selected;
+    }
+
+    function generateMonthlyTest() {
+        // 强制唤醒：A池全体回炉到总池
+        wordGroups.forEach(g => {
+            if (g.pool === 'a') {
+                const enteredDate = new Date(g.enteredAPoolDate);
+                const today = new Date();
+                const diffDays = (today - enteredDate) / (1000 * 60 * 60 * 24);
+
+                // 如果在 A 池待够了 30 天，或者进行月度总测，全部参与
+                g.pool = 'main';
+                g.tier = 'fuzzy'; // 回炉后标记为模糊档
+            }
+        });
+
+        saveData();
+        updateDashboardUI();
+
+        // 月度总测抽取 50%-70% 的总池
+        const mainPool = wordGroups.filter(g => g.pool === 'main');
+        const count = Math.floor(mainPool.length * 0.6); // 取 60%
+        const selected = [];
+        const tempPool = [...mainPool];
+
+        for (let i = 0; i < Math.min(count, mainPool.length); i++) {
+            const idx = Math.floor(Math.random() * tempPool.length);
+            selected.push(tempPool.splice(idx, 1)[0]);
+        }
+        return selected;
+    }
+
+    // 绑定仪表盘按钮事件
+    startDailyBtn.addEventListener('click', () => {
+        if (confirm('开始今日轻测？将从总池中加权抽取 30 组词。')) {
+            currentTestGroups = generateDailyTest();
+            currentTestMode = 'daily';
+            if (currentTestGroups.length > 0) {
+                resetCurrentTestAnswers();
+                renderTable();
+                dashboard.style.display = 'none';
+            }
+        }
+    });
+
+    startWeeklyBtn.addEventListener('click', () => {
+        if (confirm('开始每周复盘？将从 A 池中随机抽取 20% 词组检测是否退化。')) {
+            currentTestGroups = generateWeeklyReview();
+            currentTestMode = 'weekly';
+            if (currentTestGroups.length > 0) {
+                resetCurrentTestAnswers();
+                renderTable();
+                dashboard.style.display = 'none';
+            }
+        }
+    });
+
+    startMonthlyBtn.addEventListener('click', () => {
+        if (confirm('开始月度总测？A 池所有词组将强制回炉唤醒，并从总池中抽取约 60% 词组进行大规模筛查。')) {
+            currentTestGroups = generateMonthlyTest();
+            currentTestMode = 'monthly';
+            if (currentTestGroups.length > 0) {
+                resetCurrentTestAnswers();
+                renderTable();
+                dashboard.style.display = 'none';
+            }
+        }
+    });
+
+    function resetCurrentTestAnswers() {
+        currentTestGroups.forEach(g => {
+            g.words.forEach(w => {
+                w.userAnswer = '';
+                w.isCorrect = null;
+            });
+        });
     }
 
     // 更新行的样式（正确/错误背景色）
@@ -760,23 +1058,6 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.classList.add('correct');
         } else if (wordObj.isCorrect === false) {
             tr.classList.add('incorrect');
-        }
-    }
-
-    // 处理用户输入，只保存不验证
-    function handleAnswerInput(index, value, tr) {
-        const wordObj = words[index];
-        wordObj.userAnswer = value;
-        wordObj.isCorrect = null; // 重置状态
-
-        saveData(); // 实时保存用户的答题记录，但不判断正误
-
-        updateRowAppearance(tr, wordObj);
-
-        // 隐藏释义内容
-        const tdMeaning = tr.querySelector('.meaning-col');
-        if (tdMeaning) {
-            tdMeaning.textContent = '';
         }
     }
 
@@ -805,118 +1086,151 @@ document.addEventListener('DOMContentLoaded', () => {
         ];
     }
 
-    function getPossibleAnswers(expectedAnswer) {
-        return [...new Set(
-            expectedAnswer
+    function getPossibleAnswers(wordObj) {
+        const localPossible = [...new Set(
+            wordObj.expectedAnswer
                 .split('/')
                 .flatMap(ans => expandOptionalAnswerVariants(ans))
                 .filter(Boolean)
         )];
+
+        // 如果开启了墨墨增强且有缓存
+        if (maimemoConfig.autoExpand && maimemoConfig.token) {
+            const cachedMeanings = maimemoInterpretationCache[wordObj.word.toLowerCase()];
+            if (cachedMeanings && Array.isArray(cachedMeanings)) {
+                // 将墨墨释义也加入判定池
+                const apiPossible = cachedMeanings.flatMap(ans => expandOptionalAnswerVariants(ans));
+                return [...new Set([...localPossible, ...apiPossible])];
+            }
+        }
+
+        return localPossible;
     }
 
     // 提交检测所有单词
     submitTestBtn.addEventListener('click', () => {
-        let correctCount = 0;
-        let totalCount = 0;
-        const errorGroups = new Set(); // 收集有错题的模组编号
+        let globalCorrectCount = 0;
+        let globalTotalCount = 0;
+        const errorGroups = new Set();
+        const today = new Date().toLocaleDateString();
 
-        words.forEach(wordObj => {
-            const userAns = wordObj.userAnswer || '';
-            totalCount++; // 所有单词（无论是否作答）都计入总数
+        currentTestGroups.forEach(groupObj => {
+            let groupCorrectCount = 0;
+            const groupTotalCount = groupObj.words.length;
 
-            if (userAns.trim() === '') {
-                wordObj.isCorrect = false; // 未作答直接算作错误
-            } else {
-                // 清洗用户输入
-                const cleanedUserAns = normalizeAnswerString(userAns);
+            groupObj.words.forEach(wordObj => {
+                globalTotalCount++;
+                const userAns = wordObj.userAnswer || '';
 
-                // 展开括号可选内容后的所有合法答案
-                const possibleAnswers = getPossibleAnswers(wordObj.expectedAnswer);
+                if (userAns.trim() === '') {
+                    wordObj.isCorrect = false;
+                } else {
+                    const cleanedUserAns = normalizeAnswerString(userAns);
+                    const possibleAnswers = getPossibleAnswers(wordObj);
+                    wordObj.isCorrect = possibleAnswers.some(ans => ans === cleanedUserAns);
+                }
 
-                // 只要清洗后的用户输入匹配任何一个清洗后的正确答案即为正确
-                wordObj.isCorrect = possibleAnswers.some(ans => ans === cleanedUserAns);
-            }
+                if (wordObj.isCorrect) {
+                    groupCorrectCount++;
+                    globalCorrectCount++;
+                } else {
+                    wordObj.errorCount = (wordObj.errorCount || 0) + 1;
+                    errorGroups.add(groupObj.groupId);
+                }
+            });
 
-            if (wordObj.isCorrect) {
-                correctCount++;
-            } else {
-                wordObj.errorCount = (wordObj.errorCount || 0) + 1; // 答错则错误次数加1
-                if (wordObj.group) {
-                    errorGroups.add(wordObj.group); // 记录错误模组
+            // 更新词组层面的历史记录和状态
+            const currentRate = groupCorrectCount / groupTotalCount;
+            groupObj.correctRatesHistory.unshift(currentRate);
+            if (groupObj.correctRatesHistory.length > 10) groupObj.correctRatesHistory.pop();
+
+            groupObj.lastTestDate = new Date().toISOString();
+
+            // 毕业/退化判定逻辑
+            if (currentTestMode === 'daily') {
+                const recentRates = groupObj.correctRatesHistory.slice(0, 3);
+                const avgRate = recentRates.reduce((a, b) => a + b, 0) / recentRates.length;
+
+                if (avgRate >= SETTINGS.graduationThreshold && currentRate >= SETTINGS.minSingleRate) {
+                    groupObj.pool = 'a';
+                    groupObj.enteredAPoolDate = new Date().toISOString();
+                } else {
+                    if (avgRate < 0.5) groupObj.tier = 'weak';
+                    else if (avgRate <= 0.84) groupObj.tier = 'fuzzy';
+                }
+            } else if (currentTestMode === 'weekly') {
+                if (currentRate < SETTINGS.weeklyDegradation) {
+                    groupObj.pool = 'main';
+                    groupObj.tier = 'fuzzy';
+                    groupObj.enteredAPoolDate = null;
+                }
+            } else if (currentTestMode === 'monthly') {
+                if (currentRate < SETTINGS.monthlyDegradation) {
+                    groupObj.pool = 'main';
+                    groupObj.tier = 'weak';
+                    groupObj.enteredAPoolDate = null;
+                } else if (currentRate >= SETTINGS.graduationThreshold) {
+                    groupObj.pool = 'a';
+                    groupObj.enteredAPoolDate = new Date().toISOString();
                 }
             }
         });
 
+        if (currentTestMode === 'daily') systemState.lastDailyTestDate = today;
+        else if (currentTestMode === 'weekly') systemState.lastWeeklyReviewDate = today;
+        else if (currentTestMode === 'monthly') systemState.lastMonthlyTestDate = today;
+
         saveData();
-        renderTable(); // 全量刷新显示结果
+        renderTable();
+        updateDashboardUI();
+        dashboard.style.display = 'block';
 
-        // ==== 显示本地成绩汇总 ====
-        if (totalCount > 0) {
-            const incorrectCount = totalCount - correctCount;
-            const accuracy = ((correctCount / totalCount) * 100).toFixed(1);
+        if (globalTotalCount > 0) {
+            const incorrectCount = globalTotalCount - globalCorrectCount;
+            const accuracy = ((globalCorrectCount / globalTotalCount) * 100).toFixed(1);
 
-            summaryTotal.textContent = totalCount;
-            summaryCorrect.textContent = correctCount;
+            summaryTotal.textContent = globalTotalCount;
+            summaryCorrect.textContent = globalCorrectCount;
             summaryIncorrect.textContent = incorrectCount;
             summaryAccuracy.textContent = accuracy + '%';
 
-            // ==== 渲染悬浮错题导航 ====
             if (errorGroups.size > 0) {
                 setFloatingNavVisible(true);
                 floatingNavBadge.textContent = errorGroups.size;
                 floatingNavList.innerHTML = '';
-
-                const sortedGroups = Array.from(errorGroups).sort((a, b) => a - b);
-                sortedGroups.forEach(group => {
+                Array.from(errorGroups).sort((a, b) => a - b).forEach(gid => {
                     const link = document.createElement('a');
-                    link.href = `#module-${group}`;
+                    link.href = `#module-${gid}`;
                     link.className = 'error-module-link';
-                    link.textContent = `模组 ${group}`;
-
-                    // 点击导航项实现平滑跳转，并收起面板
+                    link.textContent = `模组 ${gid}`;
                     link.addEventListener('click', (e) => {
                         e.preventDefault();
-                        const targetModule = document.getElementById(`module-${group}`);
+                        const targetModule = document.getElementById(`module-${gid}`);
                         if (targetModule) {
-                            // 稍微偏移一点以防被顶部或导航遮挡
-                            const yOffset = -20;
-                            const y = targetModule.getBoundingClientRect().top + window.scrollY + yOffset;
-                            window.scrollTo({ top: y, behavior: 'smooth' });
-
-                            // 高亮提示
+                            window.scrollTo({ top: targetModule.getBoundingClientRect().top + window.scrollY - 20, behavior: 'smooth' });
                             targetModule.style.backgroundColor = '#fff3cd';
-                            setTimeout(() => {
-                                targetModule.style.backgroundColor = '';
-                            }, 1000);
-
-                            // 跳转后自动收起面板
+                            setTimeout(() => { targetModule.style.backgroundColor = ''; }, 1000);
                             setFloatingNavOpen(false);
                         }
                     });
-
                     floatingNavList.appendChild(link);
                 });
             } else {
                 setFloatingNavVisible(false);
             }
-
             testSummary.style.display = 'block';
-
-            // 滚动到成绩汇总区
             testSummary.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-            testSummary.style.display = 'none';
-            alert('请先输入答案再提交检测！');
         }
     });
 
     // 清空重填事件绑定
     resetTestBtn.addEventListener('click', () => {
         if (confirm('确定要清空所有答案重新测试吗？')) {
-            words.forEach(wordObj => {
-                wordObj.userAnswer = '';
-                wordObj.isCorrect = null;
-                // 注意：不重置 errorCount，保留历史错误次数
+            currentTestGroups.forEach(groupObj => {
+                groupObj.words.forEach(wordObj => {
+                    wordObj.userAnswer = '';
+                    wordObj.isCorrect = null;
+                });
             });
             saveData();
             renderTable();
@@ -959,6 +1273,251 @@ document.addEventListener('DOMContentLoaded', () => {
             top: 0,
             behavior: 'smooth'
         });
+    });
+
+    // ==== 设置面板逻辑 ====
+    settingsToggleBtn.addEventListener('click', () => {
+        settingsModal.classList.add('open');
+    });
+
+    closeSettingsBtn.addEventListener('click', () => {
+        settingsModal.classList.remove('open');
+    });
+
+    // 点击遮罩层关闭
+    settingsModal.addEventListener('click', (e) => {
+        if (e.target === settingsModal) {
+            settingsModal.classList.remove('open');
+        }
+    });
+
+    saveTokenBtn.addEventListener('click', () => {
+        const token = maimemoTokenInput.value.trim();
+        maimemoConfig.token = token;
+        maimemoConfig.syncWeakness = syncWeaknessToggle.checked;
+        maimemoConfig.autoExpand = autoExpandToggle.checked;
+
+        saveData();
+
+        if (token) {
+            alert('设置已保存！已启用墨墨 API 增强模式。');
+        } else {
+            alert('设置已保存！当前未启用 Token，将使用本地模式。');
+        }
+
+        settingsModal.classList.remove('open');
+    });
+
+    // ==== 数据备份与恢复 ====
+    exportDataBtn.addEventListener('click', () => {
+        const dataStr = JSON.stringify({
+            wordGroups: wordGroups,
+            systemState: systemState,
+            maimemoConfig: maimemoConfig,
+            version: '3.5',
+            exportDate: new Date().toISOString()
+        }, null, 2);
+
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `vocabulary_backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    importDataBtn.addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    if (!imported.wordGroups) throw new Error('无效的备份文件');
+
+                    // 执行智能合并与重置逻辑
+                    mergeAndResetData(imported.wordGroups, imported.systemState, imported.maimemoConfig);
+
+                    alert('数据恢复成功！已根据新词插入逻辑自动调整进度。');
+                    location.reload();
+                } catch (err) {
+                    alert('恢复失败：' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    });
+
+    function mergeAndResetData(newGroups, newState, newConfig) {
+        // 如果是完全替换模式
+        if (confirm('是否完全替换当前数据？(选择“取消”将尝试合并新词组并保留旧进度)')) {
+            wordGroups = newGroups;
+            systemState = newState || systemState;
+            maimemoConfig = newConfig || maimemoConfig;
+            saveData();
+            return;
+        }
+
+        // 合并模式：检测变动
+        newGroups.forEach(newG => {
+            const existingG = wordGroups.find(g => g.groupId === newG.groupId);
+            if (!existingG) {
+                // 全新词组
+                newG.pool = 'main';
+                newG.tier = 'new';
+                newG.correctRatesHistory = [];
+                newG.consecutiveQualified = 0;
+                wordGroups.push(newG);
+            } else {
+                // 检查词数变动
+                const isModified = newG.words.length !== existingG.words.length ||
+                    newG.words.some(nw => !existingG.words.find(ew => ew.word === nw.word));
+
+                if (isModified) {
+                    // 插入或变动逻辑：打回总池，重置进度
+                    existingG.words = newG.words;
+                    existingG.pool = 'main';
+                    existingG.tier = 'new';
+                    existingG.correctRatesHistory = [];
+                    existingG.consecutiveQualified = 0;
+                    existingG.lastTestDate = null;
+                    existingG.enteredAPoolDate = null;
+                }
+            }
+        });
+
+        saveData();
+    }
+
+    // 核心改进：同步代码中的 defaultWords 到当前状态
+    function syncWithCodeSource() {
+        const sourceGroups = createDefaultWordGroups();
+        let modified = false;
+
+        sourceGroups.forEach(srcG => {
+            const targetG = wordGroups.find(g => g.groupId === srcG.groupId);
+            if (!targetG) {
+                // 发现全新词组
+                wordGroups.push(srcG);
+                modified = true;
+            } else {
+                // 检查词组内容是否有变动
+                const isWordsChanged = srcG.words.length !== targetG.words.length ||
+                    srcG.words.some(sw => !targetG.words.find(tw => tw.word === sw.word));
+
+                if (isWordsChanged) {
+                    // 执行 Phase 2 逻辑：打回总池并重置
+                    targetG.words = srcG.words;
+                    targetG.pool = 'main';
+                    targetG.tier = 'new';
+                    targetG.correctRatesHistory = [];
+                    targetG.consecutiveQualified = 0;
+                    targetG.lastTestDate = null;
+                    targetG.enteredAPoolDate = null;
+                    modified = true;
+                }
+            }
+        });
+
+        if (modified) {
+            saveData();
+            console.log('检测到代码词库变动，已自动同步并重置相关进度。');
+        }
+    }
+
+    // ==== 墨墨 API 同步逻辑 (多代理增强版) ====
+    async function fetchWithProxy(targetUrl, token) {
+        // 备选代理列表：尝试不同的转发机制
+        const proxies = [
+            url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+            url => `https://corsproxy.io/?${url}`,
+            url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+        ];
+
+        let lastError = null;
+        for (const proxyFn of proxies) {
+            try {
+                const finalUrl = proxyFn(targetUrl);
+                const response = await fetch(finalUrl, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) return response;
+                if (response.status === 401) throw new Error('Token 无效');
+                console.warn(`当前代理服务器返回错误: ${response.status}，正在尝试下一个...`);
+            } catch (e) {
+                lastError = e;
+                continue;
+            }
+        }
+        throw lastError || new Error('所有代理服务器均失效');
+    }
+
+    async function fetchWordInterpretation(word) {
+        if (!maimemoConfig.token || !maimemoConfig.autoExpand) return;
+        const lowerWord = word.toLowerCase();
+        if (maimemoInterpretationCache[lowerWord]) return;
+
+        try {
+            const targetUrl = `https://open.maimemo.com/open/api/v1/interpretation?word=${lowerWord}`;
+            const response = await fetchWithProxy(targetUrl, maimemoConfig.token);
+            
+            const data = await response.json();
+            if (data.interpretations) {
+                maimemoInterpretationCache[lowerWord] = data.interpretations.map(i => i.meaning);
+                saveData();
+            }
+        } catch (e) {
+            console.error(`获取单词 ${word} 释义失败`, e);
+        }
+    }
+
+    syncMaimemoBtn.addEventListener('click', async () => {
+        if (!maimemoConfig.token) {
+            alert('请先在设置中填入墨墨 API Token！');
+            settingsModal.classList.add('open');
+            return;
+        }
+
+        syncMaimemoBtn.disabled = true;
+        syncMaimemoBtn.textContent = '🔄 同步中...';
+
+        try {
+            const targetUrl = 'https://open.maimemo.com/open/api/v1/learning';
+            const response = await fetchWithProxy(targetUrl, maimemoConfig.token);
+            const data = await response.json();
+            
+            // 过滤出薄弱单词 (status < 1 表示模糊或忘记)
+            const weakWords = (data.learning || [])
+                .filter(item => item.status < 1)
+                .map(item => item.word.toLowerCase());
+
+            maimemoWeaknessMap = new Set(weakWords);
+
+            // 找出本地受影响的词组数量
+            const affectedGroups = wordGroups.filter(g =>
+                g.words.some(w => maimemoWeaknessMap.has(w.word.toLowerCase()))
+            );
+
+            alert(`同步成功！检测到墨墨弱点单词 ${weakWords.length} 个，已映射并加权本地词组 ${affectedGroups.length} 组。`);
+        } catch (err) {
+            console.error('墨墨同步失败:', err);
+            let errorMsg = '同步失败：' + (err.message || '网络连接异常');
+            if (err.message.toLowerCase().includes('fetch') || err.message.includes('代理')) {
+                errorMsg += '\n\n提示：检测到跨域或代理被拦截。请尝试：\n1. 切换网络（如从 4G 换到 Wi-Fi）重试\n2. 检查 Token 是否输入正确\n3. 手机端建议使用内置浏览器或 Chrome。';
+            }
+            alert(errorMsg);
+        } finally {
+            syncMaimemoBtn.disabled = false;
+            syncMaimemoBtn.textContent = '🔄 同步墨墨弱点';
+        }
     });
 
     // 初始化页面

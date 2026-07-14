@@ -40,6 +40,362 @@ h2 {
     color: #2c3e50;
 }
 
+/* 仪表盘 3.0 样式 */
+#dashboard {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.dashboard-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+}
+
+.dashboard-header .stats-summary {
+    font-size: 13px;
+    color: #666;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.status-card {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 6px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.status-card .label {
+    font-size: 12px;
+    color: #666;
+}
+
+.status-card .value {
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.status-card.daily {
+    border-left: 4px solid #007bff;
+}
+
+.status-card.weekly {
+    border-left: 4px solid #ffc107;
+}
+
+.status-card.monthly {
+    border-left: 4px solid #17a2b8;
+}
+
+.status-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.test-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.test-actions button {
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: #fff;
+}
+
+.btn-warning {
+    background: #ffc107;
+    color: #333;
+}
+
+.btn-info {
+    background: #17a2b8;
+    color: #fff;
+}
+
+.test-actions button:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-footer {
+    margin-top: 15px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-secondary-sm {
+    font-size: 12px;
+    padding: 5px 10px;
+    background: #6c757d;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background 0.2s;
+    line-height: 1;
+}
+
+.btn-icon:hover {
+    background: #eee;
+}
+
+.btn-primary-sm {
+    padding: 6px 12px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* 设置弹窗样式 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 10001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+}
+
+.modal.open {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: #fff;
+    padding: 0;
+    border-radius: 12px;
+    width: min(400px, 90vw);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #2c3e50;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #999;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.settings-group {
+    margin-bottom: 20px;
+}
+
+.settings-group:last-child {
+    margin-bottom: 0;
+}
+
+.settings-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #495057;
+    font-size: 14px;
+}
+
+.input-with-action {
+    display: flex;
+    gap: 10px;
+}
+
+.input-with-action input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.help-text {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 6px;
+    line-height: 1.4;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: normal !important;
+}
+
+.checkbox-item input {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.checkbox-item span {
+    font-size: 14px;
+    color: #333;
+}
+
+/* 测试界面页眉 */
+.tester-header {
+    display: none;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    width: 100%;
+}
+
+.action-buttons button {
+    flex: 1;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#reset-test-btn {
+    background-color: #6c757d;
+    color: white;
+}
+
+#submit-test-btn {
+    background-color: #28a745;
+    color: white;
+}
+
+/* 成绩汇总区 */
+#test-summary {
+    display: none;
+    background-color: #e9ecef;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+#test-summary h3 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+.summary-stats {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.summary-item {
+    font-size: 16px;
+}
+
+.summary-item strong {
+    font-size: 20px;
+}
+
 .add-word-section {
     margin-bottom: 30px;
     padding: 15px;
@@ -112,7 +468,10 @@ th {
 
 td.meaning-col {
     font-family: "STSong", "SimSun", "Songti SC", "Times New Roman", serif;
-    /* 仅对内容应用宋体 */
+    color: #0056b3;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: #fff;
 }
 
 td input[type="text"] {
@@ -122,6 +481,7 @@ td input[type="text"] {
     border-radius: 4px;
     box-sizing: border-box;
     font-size: 16px;
+    font-family: inherit;
 }
 
 td input[type="text"]:focus {
@@ -131,10 +491,10 @@ td input[type="text"]:focus {
 }
 
 td input[type="text"][readonly] {
-    padding: 0;
+    padding: 8px 0;
     border: none;
     border-radius: 0;
-    background: transparent;
+    background: transparent !important;
     box-shadow: none;
     color: #333;
     cursor: default;
@@ -142,6 +502,10 @@ td input[type="text"][readonly] {
     caret-color: transparent;
     appearance: none;
     -webkit-appearance: none;
+}
+
+td input[type="text"][readonly]::placeholder {
+    color: transparent;
 }
 
 td input[type="text"][readonly]:focus {

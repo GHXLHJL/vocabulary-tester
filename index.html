@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>小七哥单词自测工具</title>
-    <link rel="stylesheet" href="style.css?v=26.4.35">
+    <link rel="stylesheet" href="style.css?v=26.7.1">
 </head>
 
 <body>
@@ -23,30 +23,68 @@
             we were golden back then.</p>
 
         <div class="tester-section">
-            <div class="tester-header" style="display: flex; justify-content: center; margin-bottom: 15px;">
-                <div class="action-buttons" style="display: flex; gap: 15px; width: 100%;">
-                    <button id="reset-test-btn"
-                        style="flex: 1; padding: 12px 20px; background-color: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;">重新测试</button>
-                    <button id="submit-test-btn"
-                        style="flex: 1; padding: 12px 20px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;">提交检测</button>
+            <!-- 仪表盘：优化方案 3.0 核心入口 -->
+            <div id="dashboard">
+                <div class="dashboard-header">
+                    <h3>
+                        <span style="margin-right: 8px;">🏠</span> 学习仪表盘
+                    </h3>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div id="stats-summary" class="stats-summary">
+                            总池: <strong id="main-pool-count" style="color: #333;">0</strong> 组 |
+                            A池: <strong id="a-pool-count" style="color: #28a745;">0</strong> 组
+                        </div>
+                        <button id="settings-toggle-btn" class="btn-icon" title="设置 API Token">⚙️</button>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="status-card daily">
+                        <div class="label">今日轻测</div>
+                        <div id="daily-status" class="value">未开始</div>
+                    </div>
+                    <div class="status-card weekly">
+                        <div class="label">本周复盘</div>
+                        <div id="weekly-status" class="value">未开始</div>
+                    </div>
+                    <div class="status-card monthly">
+                        <div class="label">月度总测</div>
+                        <div id="monthly-status" class="value">待唤醒</div>
+                    </div>
+                </div>
+
+                <div class="test-actions">
+                    <button id="start-daily-btn" class="btn-primary">🌞 每日轻测</button>
+                    <button id="start-weekly-btn" class="btn-warning">📅 每周复盘</button>
+                    <button id="start-monthly-btn" class="btn-info">🚀 月度总测</button>
+                </div>
+
+                <div class="dashboard-footer">
+                    <button id="sync-maimemo-btn" class="btn-primary-sm"
+                        style="background: #28a745; margin-right: auto;">🔄 同步墨墨弱点</button>
+                    <button id="export-data-btn" class="btn-secondary-sm">💾 导出备份</button>
+                    <button id="import-data-btn" class="btn-secondary-sm">📂 导入恢复</button>
+                </div>
+            </div>
+
+            <div class="tester-header">
+                <div class="action-buttons">
+                    <button id="reset-test-btn">重新测试</button>
+                    <button id="submit-test-btn">提交检测</button>
                 </div>
             </div>
 
             <!-- 本地成绩统计汇总区 -->
-            <div id="test-summary"
-                style="display: none; background-color: #e9ecef; padding: 15px; border-radius: 6px; margin-bottom: 15px; text-align: center;">
-                <h3 style="margin-top: 0; color: #2c3e50;">📊 本次检测成绩</h3>
-                <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px;">
-                    <div style="font-size: 16px;">总答题数: <strong id="summary-total"
-                            style="color: #333; font-size: 20px;">0</strong></div>
-                    <div style="font-size: 16px;">答对: <strong id="summary-correct"
-                            style="color: #28a745; font-size: 20px;">0</strong></div>
-                    <div style="font-size: 16px;">答错: <strong id="summary-incorrect"
-                            style="color: #dc3545; font-size: 20px;">0</strong></div>
-                    <div style="font-size: 16px;">准确率: <strong id="summary-accuracy"
-                            style="color: #007bff; font-size: 20px;">0%</strong></div>
+            <div id="test-summary">
+                <h3>📊 本次检测成绩</h3>
+                <div class="summary-stats">
+                    <div class="summary-item">总答题数: <strong id="summary-total" style="color: #333;">0</strong></div>
+                    <div class="summary-item">答对: <strong id="summary-correct" style="color: #28a745;">0</strong></div>
+                    <div class="summary-item">答错: <strong id="summary-incorrect" style="color: #dc3545;">0</strong>
+                    </div>
+                    <div class="summary-item">准确率: <strong id="summary-accuracy" style="color: #007bff;">0%</strong>
+                    </div>
                 </div>
-
             </div>
             <table id="word-table">
                 <thead>
@@ -82,7 +120,40 @@
 
     <div id="floating-nav-overlay"></div>
 
-    <script src="app.js?v=26.4.35"></script>
+    <!-- 新增：设置面板遮罩层 -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚙️ 插件设置 (Maimemo API)</h3>
+                <button id="close-settings-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-group">
+                    <label for="maimemo-token">墨墨 API Token</label>
+                    <div class="input-with-action">
+                        <input type="password" id="maimemo-token" placeholder="在此输入你的 Token...">
+                        <button id="save-token-btn" class="btn-primary-sm">保存</button>
+                    </div>
+                    <p class="help-text">Token 仅保存在你的浏览器本地，不会上传至任何服务器。可以在墨墨 App 的“实验功能”中申请。</p>
+                </div>
+                <div class="settings-group">
+                    <label>功能开关</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="sync-weakness-toggle" checked>
+                            <span>同步墨墨弱点 (根据手机背词情况动态调整权重)</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="auto-expand-interpretation" checked>
+                            <span>智能释义兼容 (自动匹配墨墨官方标准含义)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=26.7.1"></script>
 </body>
 
 </html>
