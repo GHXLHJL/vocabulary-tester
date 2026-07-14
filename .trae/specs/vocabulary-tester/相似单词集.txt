@@ -4,14 +4,129 @@ prescribe 开药/规定
 subscribe 订阅/同意
 describe 描述
 
+gun 枪
+guy 家伙/男人
+gum 口香糖/牙龈
+gym 健身房/体育馆
+gay 同性恋
+
+leather 皮革
+feather 羽毛
+
+shortcoming 缺点/缺陷
+shortage 短缺/不足
+shortcut 捷径/近路
+undercut 削减/压低
+short 短的/矮的
+shortly 立刻/简短的
+shorten 缩短
+shortlist 候选名单
+
+elusive 难以捉摸的
+exclusive 独有的/排外的
+
+coach 教练
+couch 长沙发/表达
+cough 咳嗽
+
+lever 杠杆/撬动
+clever 聪明的/灵巧的
+level 水平/齐平的
+
+bottom 底部（的）/尽头（的）
+button 按钮/纽扣
+
+hose 水管/软管
+horse 马
+house 房子/大楼/议院
+hoarse 嘶哑的/嘶哑的
+
+magnificent 宏伟的/壮丽的
+malignant （病）恶性的/恶毒的
+
+patrol 巡逻/巡查
+patriot 爱国者
+petrol 汽油  
+petroleum 石油
+patron 赞助人/顾客
+pardon 原谅/宽恕
+
+suit 诉讼/适合
+suite 套房/一套（东西）
+
+block 阻碍/一块
+flock 聚集/一群
+
+shadow 影子/阴影
+shallow （肤）浅的/浅薄的
+
+handicap 障碍/残疾
+kidnap 绑架/劫持
+
+shake 摇动/握手/摆脱
+shock 震惊（的）/电击
+sharp 急剧的/锋利的
+shape 形成/形状/影响
+shade 阴凉处/遮光
+
+heel 脚后跟
+heal 愈合/治愈
+hell 地狱/该死
+hall 大厅/礼堂
+hill 小山/山丘
+
+war 战争/竞争
+ware 商品/制品
+wary 谨慎的/小心的
+warn 提醒/警告
+warm 暖和（的）/热情的
+warp （使）扭曲/弯曲
+
+cession 割让/转让
+concession 让步/特许权
+recession 经济衰退/退后
+succession 继承（权）/一连串
+procession 游行/队列
+possession 拥有/财产
+
+ward 病房/防止
+award 奖品/授予
+reward 奖赏/酬金
+coward 胆小鬼/懦夫
+awkward 尴尬的/难办的
+
+beat 击败/跳动
+beast 野兽/凶残的人
+breast 胸部/乳房
+bear 承受/带有/熊
+beard 胡子/胡须
+
+rut 刻板乏味/车辙
+nut 螺母/坚果/疯子
+
+needle 针头/激怒
+needy 贫穷的/贫困的
+
+scoop 获得/一勺
+troop 军队/一群
+group 团体/组
+troupe 表演团/剧团
+
+ready 准备好的/乐意的
+greedy 贪婪的/贪心的
+tragedy 悲剧/遗憾
+remedy 解决方法/补救
+comedy 喜剧（片）
+
 mantle 覆盖（物）/地幔
 mortal 凡人/致命的
 mental 精神（健康）的
 metal 金属
 medal 奖章/奖牌
+motel 汽车旅馆
 
 ethic 道德观/道德规范
-ethnic 民族的
+ethnic 民族的/种族的
 
 cannon 猛撞/大炮
 canon 标准/真作集
@@ -53,7 +168,7 @@ thrift 节俭
 essential 基本的
 eccentric 古怪的
 
-notion 概念
+notion 概念/观念
 notice 注意/通知
 
 type 类型/打字 
@@ -89,7 +204,7 @@ generalization 概括
 
 climb攀爬
 climate气候
-climax高潮
+climax 高潮/顶点
 claim 声称
 acclaim 称赞
 declaim 演讲
@@ -157,6 +272,7 @@ confidant 知己
 
 tramp 远足/流浪汉
 damp 潮湿的
+dumb 愚蠢的/哑的
 dump 倾销/垃圾场
 jump 跳跃
 bump 撞上
@@ -168,11 +284,13 @@ gravity 重力
 brevity 简洁
 
 fate 命运
-fade 逐渐消失
-fame 声誉
-feat 功绩
-feast 盛宴
+fade 逐渐消失/褪色
+fame 声誉/名声
+feat 功绩/技艺
+feast 盛宴/尽情享用
 fake 假的/赝品
+fare 车费/船费
+fear 害怕/惧怕
 
 scare 害怕
 scarce 缺乏的
@@ -197,10 +315,10 @@ infuse 注入
 diffuse 传播（的）
 transfuse 输（血）
 
-test 测试
-text 文本
+test 测试/检验
+text 文本/短信
 taste 喜好/品味
-task 任务
+task 任务/工作
 
 elect 选举
 erect 建立
@@ -212,6 +330,7 @@ cordial 热情友好的
 expect 期待/预计
 expert 专家（的）
 export 出口（物）
+exert 运用/努力
 except 除…之外
 excerpt 摘录
 expend 花钱
@@ -239,7 +358,8 @@ attitude 态度
 altitude 高度
 latitude 纬度/自由
 longitude 经度
-aptitude 天赋
+aptitude 天赋/天资
+multitude 大量/人群
 
 talent  才能/天才
 latent  潜伏的
@@ -248,69 +368,69 @@ tenant  租户/佃户
 lantern  灯笼
 lateral  侧面的
 
-vote 投票
-veto 否决
+vote 投票/表决
+veto 否决/反对
 
 row 争吵/一排
 raw 未经加工的
-law 法则
+law 法律/司法界/警方
 paw 爪子
 jaw 下巴
-saw 锯
-sew 缝制
-sow 播种
+saw 锯子/锯开
+sew 缝（制）
+sow 播（种）/散布
 
-quota 配额
-quote 引用
+quota 配额/定额
+quote 引用/引文
 quoth 说
 quotient 商
 quotidian 每日的
 
-parade 游行
-paradox 悖论
-paralyse 使瘫痪
+parade 游行/阅兵（式）
+paradox 悖论/矛盾
+paralyse （使）麻痹/（使）瘫痪
 paradise 天堂
 
 alter 改变
-alert 警惕（的）
-avert 防止
+alert 警惕（的）/警报
+avert 防止/避免
 advert 广告/提及
-advent 到来
-overt 公开的
-invert 颠倒
+advent 到来/出现
+overt 公开的/明显的
+invert （使）颠倒
 convert 转换/改变
 divert 转向/转移
 
-principal 主要的
-principle 原则
+principal 主要的/校长
+principle 原则/原理
 
 ecological 生态的
 physiological 生理的
 psychological 心理的
 philosophical 哲学的
 
-erupt 爆发
-abrupt 突然的
-disrupt 使干扰
-corrupt 腐败（的）
-interrupt 打断
+erupt 爆发/喷发
+abrupt 突然的/意外的
+disrupt （使）扰乱/中断
+corrupt 破坏/腐败（的）
+interrupt 打断/打扰
 bankrupt 破产的
 
 sentiment 观点/情绪
-sensible 明智的
+sensible 明智的/理智的
 sensitive 敏感的/体贴的
 
-product 产品
-conduct 实施
+product 产品/产物
+conduct 实施/举止
 instruct 指示/教授（v）
-obstruct 阻碍
-destruct 毁坏
-construct 建造
+obstruct 阻碍/妨碍
+destruct 毁坏/摧毁
+construct 建造/构想
 
 board 董事会/木板
-aboard 在船上
-broad 宽阔的
-abroad 在国外
+aboard 在（船/飞机/火车）上
+broad 宽阔的/广泛的
+abroad 在国外/到国外
 
 circulation 发行量/流通
 curriculum 课程
@@ -328,7 +448,7 @@ operate 经营/运转
 cooperate 合作
 corporate 公司的
 incorporate 包括
-coordinate 使协调
+coordinate （使）协调
 
 protest 抗议
 pretext 借口
@@ -336,7 +456,8 @@ process 过程/处理
 progress 进步/进展
 congress 国会/代表大会
 
-deform 使畸形
+deform （使）畸形
+inform 通知
 perform 表现
 uniform 制服/统一的
 conform 遵守/相一致
@@ -346,13 +467,13 @@ reformation 革新
 reformer 改革者
 reformatory 改革的
 
-confer 授予
-infer 推断
+confer 授予/商讨
+infer 推断/暗示
 refer 涉及/查阅
-defer 推迟
+defer 推迟/听从
 
-chase 追逐
-phase 阶段
+chase 追逐/追求
+phase 阶段/时期
 phrase 短语/叙述
 purchase 购买
 
@@ -396,7 +517,10 @@ mount 发起
 amount 数量
 account 账户
 
+literate 识字的/有文化的
+illiterate 文盲（的）
 literacy 读写能力/专业能力
+literature 文学/文献
 literal 字面上的
 literary 文学的
 liberal 开放的
@@ -407,13 +531,14 @@ poverty 贫穷的
 proper 恰当的
 prosper 繁荣
 prospect 可能性
+propel 推进
 
 reproach 责备
 approach 接近
 approval 赞成
 appear 出现
 
-inflict 使遭受
+inflict （使）遭受
 conflict 冲突
 
 delicate 精美的
@@ -463,6 +588,7 @@ deceive 欺骗
 sufficient 充足的
 efficient 效率高的
 
+evaporate 消失/蒸发
 escalate 扩大
 evaluate 评价
 estimate 估计
@@ -503,7 +629,7 @@ inclusive 包括的
 assure （人）保证
 insure （钱）给…买保险
 ensure （事）确保
-secure （资源）获得/使安全
+secure （资源）获得/（使）安全
 
 equality 平等
 quantity 数量
@@ -520,73 +646,73 @@ obvious 明显的
 dubious 怀疑的
 serious 严重的
 
-district 地区
-distribute 分发
-contribute 捐赠
-attribute 把...归因于
+district 地区/区
+distribute 分发/（使）分散
+contribute 捐献/有助于
+attribute 将...归因于
 
-substance 物质
-substitute 代替的
-institute 机构
-constitute 构成
+substance 物质/主旨
+substitute 代替（的）
+institute 制定/机构
+constitute 构成/被视为
 
-dense 密集的
-sense 感觉
-tense 紧张的
-tease 戏弄
+dense 密集的/迟钝的
+sense 意识到/感觉/意义
+tense 紧张的/焦虑的
+tease 戏弄/梳理
 
-inhabit 居住于
-inhibit 抑制
+inhabit 居住于/身处于
+inhibit 抑制/阻碍
 
-define 定义
-confine 限制
-refine 提炼
+define 定义/说明
+confine 限制/监禁
+refine 提炼/改进
 
-ascend 上升
+ascend 上升/攀登
 descend 下降
 transcend 超出
-transition 过渡
-transaction 交易
+transition 过渡/转变
+transaction 交易/业务
 transparent 明显的/透明的
-transient 短暂的
-transmission 传输
+transient 短暂的/暂住的
+transmission 传输/发射
 translate 转变/翻译
-transform 改变
+transform 转化/改变
 transport 运输/交通方式
 transplant 移植/移居
 
-assist 帮助
-persist 坚持
-resist 抵制
+assist 帮助/促进
+persist 坚持/持续
+resist 抵制/忍住
 consist 由...组成
-roast 烘烤
-boast 自夸
-boost 增长
+roast 烘烤/烤肉
+boast 自夸/拥有
+boost 增长/促进
 
-complement 补足
-compliment 称赞
+complement 补足/（使）完美
+compliment 称赞/恭维
 
-trail 追踪
-trial 试验
+trail 追踪/路线
+trial 审判/试验
 
 state 国家（的）/状况/说明
-statue 雕塑
-status 地位
-statute 法令
-stature 身材
-saturate 浸透
+statue 雕塑/塑像
+status 状况/地位
+statute 法令/法规
+stature 身材/名望
+saturate （使）浸透/充满
 
 crumple 起皱/瘫倒
-crumble 坍塌
-grumble 抱怨
-humble 谦逊的
-bumble 弄糟
+crumble 坍塌/破裂
+grumble 抱怨/轰隆声
+humble 谦逊的/卑微的
+bumble 弄糟/语无伦次
 fumble 摸索/笨手笨脚
-jumble 使混乱
+jumble （使）混乱
 rumble 隆隆作响
-tumble 跌到
+tumble 跌倒/暴跌
 stumble 绊倒
-gamble 赌博
+gamble 赌博/冒险
 shamble 蹒跚
 assemble 集合/组装
 resemble 与…相似
@@ -607,7 +733,7 @@ project 项目/计划/投射
 eject 驱逐/喷出
 
 polish 擦亮/修改
-astonish （使）惊讶
+astonish （使）惊讶/（使）震惊
 abolish 废除/取消
 foolish 愚蠢的/尴尬的
 
