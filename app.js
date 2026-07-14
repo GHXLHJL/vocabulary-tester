@@ -80,8 +80,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.12';
+    const APP_VERSION = 'v26.7.13';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
+    const MAIMEMO_RESPONSE_WEIGHTS = {
+        FORGET: 3,
+        VAGUE: 2,
+        CANCEL_WELL_FAMILIAR: 2,
+        FAMILIAR: 0,
+        WELL_FAMILIAR: -1
+    };
 
     // 优化方案参数配置
     const SETTINGS = {
@@ -109,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         syncWeakness: true,
         autoExpand: true
     };
-    let maimemoWeaknessMap = new Set(); // 缓存墨墨中的薄弱单词
+    let maimemoWordStatusMap = {}; // 缓存墨墨单词状态：{ word: last_response }
     let maimemoInterpretationCache = {}; // 缓存墨墨释义： { word: [meaning1, meaning2] }
     let currentTestMode = null; // null | 'daily' | 'weekly' | 'monthly'
     let currentTestGroups = []; // 当前正在测试的词组引用
@@ -844,6 +851,17 @@ document.addEventListener('DOMContentLoaded', () => {
         monthlyStatus.textContent = systemState.lastMonthlyTestDate ? `上次:${systemState.lastMonthlyTestDate}` : '待进行';
     }
 
+    function getMaimemoStatusWeight(status) {
+        return MAIMEMO_RESPONSE_WEIGHTS[status] ?? 0;
+    }
+
+    function getGroupMaimemoBoost(group) {
+        return group.words.reduce((maxBoost, wordObj) => {
+            const status = maimemoWordStatusMap[wordObj.word.toLowerCase()];
+            return Math.max(maxBoost, getMaimemoStatusWeight(status));
+        }, 0);
+    }
+
     // 渲染表格内容
     function renderTable() {
         wordTbody.innerHTML = '';
@@ -977,12 +995,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (g.tier === 'weak' || g.tier === 'new') weight = 3;
             else if (g.tier === 'fuzzy') weight = 1;
 
-            // 墨墨 API 增强权重：如果组内有墨墨背错的词，权重翻倍 (x5)
+            // 墨墨 API 增强权重：根据最近反馈状态动态调整
             if (maimemoConfig.syncWeakness && maimemoConfig.token) {
-                const hasMaimemoWeakness = g.words.some(w => maimemoWeaknessMap.has(w.word.toLowerCase()));
-                if (hasMaimemoWeakness) {
-                    weight = 5;
-                }
+                const maimemoBoost = getGroupMaimemoBoost(g);
+                weight = Math.max(1, weight + maimemoBoost);
             }
 
             for (let i = 0; i < weight; i++) {
@@ -1718,18 +1734,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.error) throw new Error(data.error);
 
-            const weakWords = (data?.data?.records || [])
-                .filter(item => ['VAGUE', 'FORGET'].includes(item.last_response))
-                .map(item => item.voc_spelling.toLowerCase());
-
-            maimemoWeaknessMap = new Set(weakWords);
+            const studyRecords = data?.data?.records || [];
+            maimemoWordStatusMap = studyRecords.reduce((statusMap, item) => {
+                const spelling = item?.voc_spelling?.toLowerCase();
+                const status = item?.last_response;
+                if (spelling && status) {
+                    statusMap[spelling] = status;
+                }
+                return statusMap;
+            }, {});
 
             // 找出本地受影响的词组数量
             const affectedGroups = wordGroups.filter(g =>
-                g.words.some(w => maimemoWeaknessMap.has(w.word.toLowerCase()))
+                g.words.some(w => maimemoWordStatusMap[w.word.toLowerCase()])
             );
 
-            alert(`同步成功！检测到墨墨弱点单词 ${weakWords.length} 个，已映射并加权本地词组 ${affectedGroups.length} 组。`);
+            const statusCounts = studyRecords.reduce((counts, item) => {
+                const status = item?.last_response;
+                if (status) {
+                    counts[status] = (counts[status] || 0) + 1;
+                }
+                return counts;
+            }, {});
+            const summaryText = Object.entries(statusCounts)
+                .filter(([, count]) => count > 0)
+                .map(([status, count]) => `${status} ${count} 个`)
+                .join('，');
+
+            alert(`同步成功！已读取墨墨学习状态 ${studyRecords.length} 个，并映射本地词组 ${affectedGroups.length} 组。${summaryText ? `\n\n状态分布：${summaryText}` : ''}`);
         } catch (err) {
             console.error('墨墨同步失败:', err);
             let errorMsg = '同步失败：' + (err.message || '网络连接异常');
