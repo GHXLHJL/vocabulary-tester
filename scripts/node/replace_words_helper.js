@@ -77,13 +77,13 @@ try {
         process.exit(1);
     }
 
-    // 4. 自动更新 STORAGE_KEY 的版本号，格式为 v年.月.序号
+    // 4. 自动更新 APP_VERSION 的版本号，格式为 v年.月.序号
     let updatedVersion = null;
-    const regexVersion = /(const\s+STORAGE_KEY\s*=\s*'vocabulary_tester_data_)(v[^']+)(';)/;
+    const regexVersion = /(const\s+APP_VERSION\s*=\s*')(v[^']+)(';)/;
     appJsContent = appJsContent.replace(regexVersion, (match, p1, p2, p3) => {
         const newVersion = getNextVersion(p2);
         updatedVersion = newVersion;
-        console.log(`[OK] Updated storage version: ${p2} -> ${newVersion}`);
+        console.log(`[OK] Updated app version: ${p2} -> ${newVersion}`);
         return `${p1}${newVersion}${p3}`;
     });
 
