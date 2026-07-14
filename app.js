@@ -80,7 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 版本更新以刷新缓存
+    const APP_VERSION = 'v26.7.12';
+    const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
 
     // 优化方案参数配置
     const SETTINGS = {
@@ -120,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 在左上角显示当前版本号
     if (appVersionDisplay) {
-        appVersionDisplay.textContent = `Version: v3.0.0 (Mem-Enhanced)`;
+        appVersionDisplay.textContent = APP_VERSION;
     }
 
     // 预置部分初始词库
@@ -1372,9 +1373,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     exitTestBtn.addEventListener('click', async () => {
-        const confirmed = await openTestActionConfirm('退出检测', '确定要退出检测吗？当前这一页的作答不会保留，并返回主页面。');
+        const hasSubmittedCurrentTest = !currentTestSnapshot;
+        const exitMessage = hasSubmittedCurrentTest
+            ? '确定要退出检测吗？本次测试结果已保存，退出后将返回主页面。'
+            : '确定要退出检测吗？当前这一页的作答不会保留，并返回主页面。';
+        const confirmed = await openTestActionConfirm('退出检测', exitMessage);
         if (confirmed) {
-            leaveCurrentTest(true);
+            leaveCurrentTest(!hasSubmittedCurrentTest);
         }
     });
 
