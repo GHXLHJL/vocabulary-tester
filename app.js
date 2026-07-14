@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const userNicknameInput = document.getElementById('user-nickname');
     const saveTokenBtn = document.getElementById('save-token-btn');
     const syncWeaknessToggle = document.getElementById('sync-weakness-toggle');
+    const kaoyanDictStatusHint = document.getElementById('kaoyan-dict-status');
 
     // 悬浮错题导航相关 DOM
     const floatingNavContainer = document.getElementById('floating-nav-container');
@@ -77,6 +78,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function updateKaoyanDictStatusUI() {
+        if (!kaoyanDictStatusHint) return;
+
+        kaoyanDictStatusHint.className = 'dict-status';
+        if (kaoyanDictState.status === 'loading') {
+            kaoyanDictStatusHint.classList.add('dict-status-loading');
+            kaoyanDictStatusHint.textContent = '增强判题词库加载中，提交时会自动等待完成。';
+            return;
+        }
+
+        if (kaoyanDictState.status === 'ready') {
+            kaoyanDictStatusHint.classList.add('dict-status-ready');
+            kaoyanDictStatusHint.textContent = `增强判题词库已就绪，当前支持 ${kaoyanDictState.wordCount} 个考研单词多义项匹配。`;
+            return;
+        }
+
+        kaoyanDictStatusHint.classList.add('dict-status-failed');
+        if (location.protocol === 'file:') {
+            kaoyanDictStatusHint.textContent = '增强判题词库加载失败，当前直接打开本地文件时可能受浏览器限制；本次将仅按本地释义判题。';
+        } else {
+            kaoyanDictStatusHint.textContent = '增强判题词库加载失败，当前仅按本地释义判题。';
+        }
+    }
+
+    async function loadKaoyanDict() {
+        kaoyanDictState.status = 'loading';
+        updateKaoyanDictStatusUI();
+        try {
+            const response = await fetch('kaoyan_dict.json');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            kaoyanDict = await response.json();
+            kaoyanDictState.status = 'ready';
+            kaoyanDictState.wordCount = Object.keys(kaoyanDict).length;
+            console.log(`离线考研词库加载成功，共包含 ${kaoyanDictState.wordCount} 个单词`);
+        } catch (e) {
+            kaoyanDict = null;
+            kaoyanDictState.status = 'failed';
+            kaoyanDictState.wordCount = 0;
+            console.warn('离线考研词库加载失败:', e);
+        } finally {
+            updateKaoyanDictStatusUI();
+        }
+    }
+
     initSupabase();
 
     const APP_VERSION = 'v26.7.20';
@@ -115,11 +163,20 @@ document.addEventListener('DOMContentLoaded', () => {
         syncWeakness: true
     };
     let maimemoWordStatusMap = {}; // 缓存墨墨单词状态：{ word: last_response }
+    let kaoyanDict = null; // 离线考研词库
+    let kaoyanDictState = {
+        status: 'loading',
+        wordCount: 0
+    };
+    let kaoyanDictReadyPromise = null;
     let currentTestMode = null; // null | 'daily' | 'weekly' | 'monthly'
     let currentTestGroups = []; // 当前正在测试的词组引用
     let currentTestSnapshot = null; // 进入测试前的快照，用于退出时回滚
 
     let confirmActionResolver = null;
+
+    updateKaoyanDictStatusUI();
+    kaoyanDictReadyPromise = loadKaoyanDict();
 
     const appVersionDisplay = document.getElementById('app-version-display');
 
@@ -1317,7 +1374,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 提交检测所有单词
-    submitTestBtn.addEventListener('click', () => {
+    submitTestBtn.addEventListener('click', async () => {
+        if (kaoyanDictState.status === 'loading') {
+            submitTestBtn.disabled = true;
+            const originalText = submitTestBtn.textContent;
+            submitTestBtn.textContent = '词库加载中...';
+            try {
+                await kaoyanDictReadyPromise;
+            } finally {
+                submitTestBtn.disabled = false;
+                submitTestBtn.textContent = originalText;
+            }
+        }
+
         let globalCorrectCount = 0;
         let globalTotalCount = 0;
         const errorGroups = new Set();
@@ -1336,7 +1405,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     const cleanedUserAns = normalizeAnswerString(userAns);
                     const possibleAnswers = getPossibleAnswers(wordObj);
-                    wordObj.isCorrect = possibleAnswers.some(ans => ans === cleanedUserAns);
+                    let isMatch = possibleAnswers.some(ans => ans === cleanedUserAns);
+
+                    // 如果本地词库没匹配上，尝试大库匹配
+                    if (!isMatch && kaoyanDict) {
+                        const wordKey = wordObj.word.toLowerCase();
+                        const dictTranslations = kaoyanDict[wordKey] || [];
+                        isMatch = dictTranslations.some(t => normalizeAnswerString(t) === cleanedUserAns);
+                    }
+
+                    wordObj.isCorrect = isMatch;
                 }
 
                 if (wordObj.isCorrect) {

@@ -107,6 +107,29 @@ h2 {
     line-height: 1.5;
 }
 
+.dict-status {
+    margin-top: 6px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.dict-status-loading {
+    background: #fff8e1;
+    color: #8a6d1d;
+}
+
+.dict-status-ready {
+    background: #eef8f0;
+    color: #257942;
+}
+
+.dict-status-failed {
+    background: #fdeeee;
+    color: #b33a3a;
+}
+
 .stats-line {
     display: inline-flex;
     align-items: center;
