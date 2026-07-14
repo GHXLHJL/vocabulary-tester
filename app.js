@@ -1300,7 +1300,8 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTestSnapshot = null;
         renderTable();
         updateDashboardUI();
-        dashboard.style.display = 'block';
+        // 提交后仍停留在当前独立测试页，只有退出检测时才回主页面
+        dashboard.style.display = 'none';
 
         if (globalTotalCount > 0) {
             const incorrectCount = globalTotalCount - globalCorrectCount;
