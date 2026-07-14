@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.20';
+    const APP_VERSION = 'v26.7.22';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const MAIMEMO_RESPONSE_WEIGHTS = {
         FORGET: 3,
@@ -136,15 +136,18 @@ document.addEventListener('DOMContentLoaded', () => {
         FAMILIAR: 0,
         WELL_FAMILIAR: -1
     };
-    const CHINESE_NEAR_SYNONYM_GROUPS = [
+    const GLOBAL_SYN_DICT = [
         ['方法', '办法', '方式', '手段', '途径'],
         ['聪明', '机灵', '巧妙', '灵巧'],
         ['聪明的', '机灵的', '巧妙的', '灵巧的'],
         ['水平', '水准', '程度', '等级'],
+        ['员工', '职工', '职员', '工作人员', '雇员'],
+        ['看见', '看到', '瞧见', '目睹'],
+        ['逃避', '躲开', '规避'],
         ['不可避免', '不可避免的', '无法避免', '无法避免的'],
         ['必然发生', '必然发生的', '必然', '必然的']
     ];
-    const CHINESE_NEAR_SYNONYM_MAP = CHINESE_NEAR_SYNONYM_GROUPS.reduce((accumulator, group) => {
+    const GLOBAL_SYN_DICT_MAP = GLOBAL_SYN_DICT.reduce((accumulator, group) => {
         group.forEach(item => {
             accumulator[item] = group;
         });
@@ -1359,7 +1362,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return str.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '');
     }
 
-    function expandNearSynonymVariants(str) {
+    function expandNearSynonymVariants(str, options = {}) {
+        const { useGlobalSynonyms = true } = options;
         const normalized = normalizeAnswerString(str);
         if (!normalized) return [];
 
@@ -1383,8 +1387,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 queue.push(current.slice(0, -1));
             }
 
-            const synonymGroup = CHINESE_NEAR_SYNONYM_MAP[current];
-            if (synonymGroup) {
+            const synonymGroup = GLOBAL_SYN_DICT_MAP[current];
+            if (useGlobalSynonyms && synonymGroup) {
                 synonymGroup.forEach(item => queue.push(item));
             }
         }
@@ -1411,9 +1415,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ];
     }
 
-    function expandMeaningVariants(str) {
+    function expandMeaningVariants(str, options = {}) {
         return expandOptionalAnswerVariants(str)
-            .flatMap(ans => expandNearSynonymVariants(ans))
+            .flatMap(ans => expandNearSynonymVariants(ans, options))
             .filter(Boolean);
     }
 
@@ -1421,14 +1425,49 @@ document.addEventListener('DOMContentLoaded', () => {
         return [...new Set(
             wordObj.expectedAnswer
                 .split('/')
-                .flatMap(ans => expandMeaningVariants(ans))
+                .flatMap(ans => expandMeaningVariants(ans, { useGlobalSynonyms: false }))
                 .filter(Boolean)
         )];
     }
 
-    function isMeaningMatch(userAnswer, candidateAnswers) {
-        const userVariants = new Set(expandNearSynonymVariants(userAnswer));
-        return candidateAnswers.some(answer => userVariants.has(answer));
+    function getKaoyanDictEntry(wordKey) {
+        const rawEntry = kaoyanDict?.[wordKey];
+        if (!rawEntry) {
+            return { translations: [], synonyms: [] };
+        }
+
+        if (Array.isArray(rawEntry)) {
+            return { translations: rawEntry, synonyms: [] };
+        }
+
+        return {
+            translations: Array.isArray(rawEntry.translations) ? rawEntry.translations : [],
+            synonyms: Array.isArray(rawEntry.synonyms) ? rawEntry.synonyms : []
+        };
+    }
+
+    function getKaoyanDictAnswers(wordKey) {
+        const entry = getKaoyanDictEntry(wordKey);
+        return [...new Set(
+            [...entry.translations, ...entry.synonyms]
+                .flatMap(item => expandMeaningVariants(item, { useGlobalSynonyms: false }))
+                .filter(Boolean)
+        )];
+    }
+
+    function expandGlobalCandidateAnswers(candidateAnswers) {
+        return [...new Set(
+            candidateAnswers.flatMap(answer => expandNearSynonymVariants(answer, { useGlobalSynonyms: true }))
+        )];
+    }
+
+    function isMeaningMatch(userAnswer, candidateAnswers, options = {}) {
+        const { useGlobalSynonyms = false } = options;
+        const userVariants = new Set(expandMeaningVariants(userAnswer, { useGlobalSynonyms }));
+        const targetAnswers = useGlobalSynonyms
+            ? expandGlobalCandidateAnswers(candidateAnswers)
+            : candidateAnswers;
+        return targetAnswers.some(answer => userVariants.has(answer));
     }
 
     // 提交检测所有单词
@@ -1463,13 +1502,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     const possibleAnswers = getPossibleAnswers(wordObj);
                     let isMatch = isMeaningMatch(userAns, possibleAnswers);
+                    let dictAnswers = [];
 
-                    // 如果本地词库没匹配上，尝试大库匹配
+                    // 第二层：离线大词库义项
                     if (!isMatch && kaoyanDict) {
                         const wordKey = wordObj.word.toLowerCase();
-                        const dictTranslations = (kaoyanDict[wordKey] || [])
-                            .flatMap(translation => expandNearSynonymVariants(translation));
-                        isMatch = isMeaningMatch(userAns, [...new Set(dictTranslations)]);
+                        dictAnswers = getKaoyanDictAnswers(wordKey);
+                        isMatch = isMeaningMatch(userAns, dictAnswers);
+                    }
+
+                    // 第三层：全局通用近义词字典
+                    if (!isMatch) {
+                        isMatch = isMeaningMatch(userAns, [...new Set([...possibleAnswers, ...dictAnswers])], {
+                            useGlobalSynonyms: true
+                        });
                     }
 
                     wordObj.isCorrect = isMatch;
