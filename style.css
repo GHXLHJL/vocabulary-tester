@@ -196,6 +196,33 @@ h2 {
     background: #eee;
 }
 
+.leaderboard-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border: none;
+    border-radius: 999px;
+    background: #fff3cd;
+    color: #8a5800;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s, filter 0.2s, box-shadow 0.2s;
+}
+
+.leaderboard-btn:hover {
+    filter: brightness(1.02);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.leaderboard-btn-icon {
+    font-size: 16px;
+    line-height: 1;
+}
+
 .btn-primary-sm {
     padding: 6px 12px;
     background: #007bff;
