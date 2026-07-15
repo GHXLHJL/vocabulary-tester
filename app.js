@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.22';
+    const APP_VERSION = 'v26.7.23';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const MAIMEMO_RESPONSE_WEIGHTS = {
         FORGET: 3,
@@ -1236,8 +1236,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 绑定仪表盘按钮事件
-    startDailyBtn.addEventListener('click', () => {
-        if (confirm('开始今日轻测？将从总池中加权抽取 30 组词。')) {
+    startDailyBtn.addEventListener('click', async () => {
+        const confirmed = await openTestActionConfirm('今日轻测', '开始今日轻测？将从总池中加权抽取 30 组词。');
+        if (confirmed) {
             currentTestSnapshot = createCurrentTestSnapshot();
             currentTestGroups = generateDailyTest();
             currentTestMode = 'daily';
@@ -1250,8 +1251,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    startWeeklyBtn.addEventListener('click', () => {
-        if (confirm('开始每周复盘？将从 A 池中随机抽取 20% 词组检测是否退化。')) {
+    startWeeklyBtn.addEventListener('click', async () => {
+        const confirmed = await openTestActionConfirm('每周复盘', '开始每周复盘？将从 A 池中随机抽取 20% 词组检测是否退化。');
+        if (confirmed) {
             currentTestSnapshot = createCurrentTestSnapshot();
             currentTestGroups = generateWeeklyReview();
             currentTestMode = 'weekly';
@@ -1760,13 +1762,13 @@ document.addEventListener('DOMContentLoaded', () => {
         input.onchange = (e) => {
             const file = e.target.files[0];
             const reader = new FileReader();
-            reader.onload = (event) => {
+            reader.onload = async (event) => {
                 try {
                     const imported = JSON.parse(event.target.result);
                     if (!imported.wordGroups) throw new Error('无效的备份文件');
 
                     // 执行智能合并与重置逻辑
-                    mergeAndResetData(
+                    await mergeAndResetData(
                         imported.wordGroups,
                         imported.systemState,
                         imported.maimemoConfig,
@@ -1784,9 +1786,10 @@ document.addEventListener('DOMContentLoaded', () => {
         input.click();
     });
 
-    function mergeAndResetData(newGroups, newState, newConfig, newWordStatusMap) {
+    async function mergeAndResetData(newGroups, newState, newConfig, newWordStatusMap) {
         // 如果是完全替换模式
-        if (confirm('是否完全替换当前数据？(选择“取消”将尝试合并新词组并保留旧进度)')) {
+        const confirmed = await openTestActionConfirm('导入数据', '是否完全替换当前数据？(选择“取消”将尝试合并新词组并保留旧进度)');
+        if (confirmed) {
             wordGroups = newGroups;
             systemState = newState || systemState;
             maimemoConfig = newConfig || maimemoConfig;
