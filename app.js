@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.23';
+    const APP_VERSION = 'v26.7.24';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const MAIMEMO_RESPONSE_WEIGHTS = {
         FORGET: 3,
@@ -416,8 +416,13 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 50, word: 'strap', expectedAnswer: '捆绑', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 50, word: 'strip', expectedAnswer: '剥夺', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 50, word: 'stripe', expectedAnswer: '条纹', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 50, word: 'scrip', expectedAnswer: '临时凭证/便条', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 50, word: 'script', expectedAnswer: '剧本/计划', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 50, word: 'spite', expectedAnswer: '怨恨', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 50, word: 'spit', expectedAnswer: '吐（口水）', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 50, word: 'scrap', expectedAnswer: '放弃/废品/吵架', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 50, word: 'scrape', expectedAnswer: '勉强通过/擦伤/抓取', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 50, word: 'scratch', expectedAnswer: '抓/刮（伤）', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 51, word: 'confide', expectedAnswer: '透露', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 51, word: 'confidence', expectedAnswer: '信心', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 51, word: 'confident', expectedAnswer: '自信的', userAnswer: '', isCorrect: null },
@@ -579,7 +584,6 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 81, word: 'progress', expectedAnswer: '进步/进展', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 81, word: 'congress', expectedAnswer: '国会/代表大会', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 82, word: 'deform', expectedAnswer: '（使）畸形', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 82, word: 'inform', expectedAnswer: '通知', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 82, word: 'perform', expectedAnswer: '表现', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 82, word: 'uniform', expectedAnswer: '制服/统一的', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 82, word: 'conform', expectedAnswer: '遵守/相一致', userAnswer: '', isCorrect: null },
@@ -641,7 +645,6 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 94, word: 'proper', expectedAnswer: '恰当的', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 94, word: 'prosper', expectedAnswer: '繁荣', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 94, word: 'prospect', expectedAnswer: '可能性', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 94, word: 'propel', expectedAnswer: '推进', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 95, word: 'reproach', expectedAnswer: '责备', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 95, word: 'approach', expectedAnswer: '接近', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 95, word: 'approval', expectedAnswer: '赞成', userAnswer: '', isCorrect: null },
@@ -822,6 +825,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 128, word: 'bid', expectedAnswer: '出价/努力', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 128, word: 'hid(hide)', expectedAnswer: '躲藏', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 128, word: 'rid', expectedAnswer: '摆脱/除去', userAnswer: '', isCorrect: null },
+
 
 
 

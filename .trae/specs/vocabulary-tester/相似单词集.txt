@@ -262,8 +262,13 @@ trap 困住/陷阱
 strap 捆绑
 strip 剥夺
 stripe 条纹
+scrip 临时凭证/便条
+script 剧本/计划
 spite 怨恨
 spit 吐（口水）
+scrap 放弃/废品/吵架
+scrape 勉强通过/擦伤/抓取
+scratch 抓/刮（伤）
 
 confide 透露
 confidence 信心
@@ -457,7 +462,6 @@ progress 进步/进展
 congress 国会/代表大会
 
 deform （使）畸形
-inform 通知
 perform 表现
 uniform 制服/统一的
 conform 遵守/相一致
@@ -531,7 +535,6 @@ poverty 贫穷的
 proper 恰当的
 prosper 繁荣
 prospect 可能性
-propel 推进
 
 reproach 责备
 approach 接近
