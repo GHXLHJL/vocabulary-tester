@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.25';
+    const APP_VERSION = 'v26.7.26';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -1086,7 +1086,10 @@ document.addEventListener('DOMContentLoaded', () => {
             item.innerHTML = `
                 <div class="record-info">
                     <div class="record-time">${timeStr}</div>
-                    <div class="record-meta">答对 ${record.correct} / 总计 ${record.total}</div>
+                    <div class="record-meta">
+                        <span>答对: <strong class="record-count-correct">${record.correct}</strong></span>
+                        <span style="margin-left: 10px;">答错: <strong class="record-count-incorrect">${record.total - record.correct}</strong></span>
+                    </div>
                 </div>
                 <div class="record-accuracy ${colorClass}">${record.accuracy}%</div>
             `;
