@@ -645,18 +645,24 @@ h2 {
 }
 
 .record-detail-table .result-tag {
-    font-size: 11px;
-    padding: 1px 6px;
-    border-radius: 10px;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
     color: white;
+    font-weight: bold;
+    display: inline-block;
+    min-width: 44px;
+    text-align: center;
 }
 
 .result-tag.correct {
-    background-color: #28a745;
+    background-color: #1e7e34;
+    box-shadow: 0 1px 3px rgba(30, 126, 52, 0.3);
 }
 
 .result-tag.incorrect {
-    background-color: #dc3545;
+    background-color: #bd2130;
+    box-shadow: 0 1px 3px rgba(189, 33, 48, 0.3);
 }
 
 /* 排行榜表格样式 */
