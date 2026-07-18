@@ -57,6 +57,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const testActionCancelBtn = document.getElementById('test-action-cancel-btn');
     const testActionConfirmBtn = document.getElementById('test-action-confirm-btn');
 
+    // 测试记录相关 DOM
+    const recordsModal = document.getElementById('records-modal');
+    const closeRecordsBtn = document.getElementById('close-records-btn');
+    const recordsList = document.getElementById('records-list');
+    const recordDetailView = document.getElementById('record-detail-view');
+    const backToRecordsBtn = document.getElementById('back-to-records-btn');
+    const detailRecordTime = document.getElementById('detail-record-time');
+    const recordDetailContent = document.getElementById('record-detail-content');
+    const recordModalTitle = document.getElementById('records-modal-title');
+    const recordBtns = document.querySelectorAll('.record-btn');
+
     // Supabase 配置
     const SUPABASE_URL = 'https://iebdkqswcyuyqsusmocn.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_5JmvfLkKx-Nmv9Dts9OvDw_2kOXu5qn';
@@ -129,6 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const APP_VERSION = 'v26.7.24';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
+    const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
+    const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
     const MAIMEMO_RESPONSE_WEIGHTS = {
         FORGET: 3,
         VAGUE: 2,
@@ -1006,6 +1019,168 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 测试记录相关逻辑
+    function loadTestRecords() {
+        try {
+            const stored = localStorage.getItem(RECORDS_STORAGE_KEY);
+            return stored ? JSON.parse(stored) : { daily: [], weekly: [], monthly: [] };
+        } catch (e) {
+            console.error('加载记录失败:', e);
+            return { daily: [], weekly: [], monthly: [] };
+        }
+    }
+
+    function saveTestRecord(mode, result) {
+        try {
+            const records = loadTestRecords();
+            const modeRecords = records[mode] || [];
+
+            const newRecord = {
+                id: Date.now().toString(),
+                timestamp: Date.now(),
+                total: result.total,
+                correct: result.correct,
+                accuracy: result.accuracy,
+                groups: JSON.parse(JSON.stringify(result.groups))
+            };
+
+            modeRecords.unshift(newRecord);
+            if (modeRecords.length > 5) modeRecords.pop();
+
+            records[mode] = modeRecords;
+            localStorage.setItem(RECORDS_STORAGE_KEY, JSON.stringify(records));
+        } catch (e) {
+            console.error('保存记录失败:', e);
+        }
+    }
+
+    function renderRecordsList(mode) {
+        const records = loadTestRecords();
+        const modeRecords = records[mode] || [];
+
+        const modeNames = { daily: '每日轻测', weekly: '每周复盘', monthly: '月度总测' };
+        recordModalTitle.textContent = `${modeNames[mode]} - 历史记录`;
+
+        recordsList.innerHTML = '';
+        recordDetailView.style.display = 'none';
+        recordsList.style.display = 'flex';
+
+        if (modeRecords.length === 0) {
+            recordsList.innerHTML = '<div class="records-empty">暂无记录，完成测试后将在这里显示</div>';
+            return;
+        }
+
+        modeRecords.forEach(record => {
+            const item = document.createElement('div');
+            item.className = 'record-item';
+
+            const accuracyVal = parseFloat(record.accuracy);
+            let colorClass = 'accuracy-low';
+            if (accuracyVal > 70) colorClass = 'accuracy-high';
+            else if (accuracyVal >= 50) colorClass = 'accuracy-mid';
+
+            const timeStr = new Date(record.timestamp).toLocaleString('zh-CN', {
+                month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+            });
+
+            item.innerHTML = `
+                <div class="record-info">
+                    <div class="record-time">${timeStr}</div>
+                    <div class="record-meta">答对 ${record.correct} / 总计 ${record.total}</div>
+                </div>
+                <div class="record-accuracy ${colorClass}">${record.accuracy}%</div>
+            `;
+
+            item.onclick = () => showRecordDetail(record);
+            recordsList.appendChild(item);
+        });
+    }
+
+    function showRecordDetail(record) {
+        recordsList.style.display = 'none';
+        recordDetailView.style.display = 'block';
+        detailRecordTime.textContent = new Date(record.timestamp).toLocaleString();
+
+        recordDetailContent.innerHTML = '';
+        const table = document.createElement('table');
+        table.className = 'record-detail-table';
+
+        record.groups.forEach(group => {
+            group.words.forEach(word => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="word">${word.word}</td>
+                    <td>${word.userAnswer || '<空>'}</td>
+                    <td><span class="result-tag ${word.isCorrect ? 'correct' : 'incorrect'}">${word.isCorrect ? '正确' : '错误'}</span></td>
+                `;
+                table.appendChild(tr);
+            });
+        });
+
+        recordDetailContent.appendChild(table);
+    }
+
+    // 草稿保存相关逻辑
+    let draftTimer = null;
+    function saveDraft(mode, groups) {
+        if (draftTimer) clearTimeout(draftTimer);
+        draftTimer = setTimeout(() => {
+            try {
+                const draft = {
+                    mode: mode,
+                    timestamp: Date.now(),
+                    groups: JSON.parse(JSON.stringify(groups))
+                };
+                localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+            } catch (e) {
+                console.error('保存草稿失败:', e);
+            }
+        }, 1000); // 1秒防抖
+    }
+
+    function loadDraft() {
+        try {
+            const stored = localStorage.getItem(DRAFT_STORAGE_KEY);
+            if (!stored) return null;
+            const draft = JSON.parse(stored);
+
+            // 24小时过期检查
+            if (Date.now() - draft.timestamp > 24 * 60 * 60 * 1000) {
+                clearDraft();
+                return null;
+            }
+            return draft;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function clearDraft() {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+    }
+
+    async function checkDraftOnStart(mode) {
+        const draft = loadDraft();
+        if (draft && draft.mode === mode) {
+            const answeredCount = draft.groups.reduce((acc, g) =>
+                acc + g.words.filter(w => w.userAnswer && w.userAnswer.trim()).length, 0
+            );
+            const totalCount = draft.groups.reduce((acc, g) => acc + g.words.length, 0);
+
+            const confirmed = await openTestActionConfirm(
+                '恢复草稿',
+                `检测到未完成的测试（已答 ${answeredCount} / 共 ${totalCount} 题），是否继续？`
+            );
+
+            if (confirmed) {
+                return draft.groups;
+            } else {
+                clearDraft();
+            }
+        }
+        return null;
+    }
+
     // 更新仪表盘显示
     function updateDashboardUI() {
         const mainPool = wordGroups.filter(g => g.pool === 'main');
@@ -1111,6 +1286,12 @@ document.addEventListener('DOMContentLoaded', () => {
             wordObj.userAnswer = e.target.value;
             wordObj.isCorrect = null;
             saveData();
+
+            // 触发草稿自动保存
+            if (currentTestMode) {
+                saveDraft(currentTestMode, currentTestGroups);
+            }
+
             updateRowAppearance(tr, wordObj);
             const tdMeaning = tr.querySelector('.meaning-col');
             if (tdMeaning) tdMeaning.textContent = '';
@@ -1241,6 +1422,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 绑定仪表盘按钮事件
     startDailyBtn.addEventListener('click', async () => {
+        const draftGroups = await checkDraftOnStart('daily');
+        if (draftGroups) {
+            currentTestGroups = draftGroups;
+            currentTestMode = 'daily';
+            currentTestSnapshot = createCurrentTestSnapshot();
+            updateTestActionPlacement(false);
+            renderTable();
+            dashboard.style.display = 'none';
+            return;
+        }
+
         const confirmed = await openTestActionConfirm('今日轻测', '开始今日轻测？将从总池中加权抽取 30 组词。');
         if (confirmed) {
             currentTestSnapshot = createCurrentTestSnapshot();
@@ -1251,11 +1443,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateTestActionPlacement(false);
                 renderTable();
                 dashboard.style.display = 'none';
+                saveDraft(currentTestMode, currentTestGroups);
             }
         }
     });
 
     startWeeklyBtn.addEventListener('click', async () => {
+        const draftGroups = await checkDraftOnStart('weekly');
+        if (draftGroups) {
+            currentTestGroups = draftGroups;
+            currentTestMode = 'weekly';
+            currentTestSnapshot = createCurrentTestSnapshot();
+            updateTestActionPlacement(false);
+            renderTable();
+            dashboard.style.display = 'none';
+            return;
+        }
+
         const confirmed = await openTestActionConfirm('每周复盘', '开始每周复盘？将从 A 池中随机抽取 20% 词组检测是否退化。');
         if (confirmed) {
             currentTestSnapshot = createCurrentTestSnapshot();
@@ -1266,11 +1470,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateTestActionPlacement(false);
                 renderTable();
                 dashboard.style.display = 'none';
+                saveDraft(currentTestMode, currentTestGroups);
             }
         }
     });
 
     startMonthlyBtn.addEventListener('click', async () => {
+        const draftGroups = await checkDraftOnStart('monthly');
+        if (draftGroups) {
+            currentTestGroups = draftGroups;
+            currentTestMode = 'monthly';
+            currentTestSnapshot = createCurrentTestSnapshot();
+            updateTestActionPlacement(false);
+            renderTable();
+            dashboard.style.display = 'none';
+            return;
+        }
+
         const confirmed = await openTestActionConfirm('月度总测', '确定开始月度总测吗？A 池会回炉唤醒，并从总池抽取约 60% 词组进行筛查。');
         if (confirmed) {
             currentTestSnapshot = createCurrentTestSnapshot();
@@ -1281,8 +1497,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateTestActionPlacement(false);
                 renderTable();
                 dashboard.style.display = 'none';
+                saveDraft(currentTestMode, currentTestGroups);
             }
         }
+    });
+
+    // 绑定记录按钮事件
+    recordBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const mode = btn.dataset.mode;
+            renderRecordsList(mode);
+            recordsModal.classList.add('open');
+        });
+    });
+
+    closeRecordsBtn.addEventListener('click', () => {
+        recordsModal.classList.remove('open');
+    });
+
+    backToRecordsBtn.addEventListener('click', () => {
+        recordDetailView.style.display = 'none';
+        recordsList.style.display = 'flex';
     });
 
     function resetCurrentTestAnswers() {
@@ -1578,15 +1814,27 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (currentTestMode === 'monthly') systemState.lastMonthlyTestDate = today;
 
         saveData();
-        currentTestSnapshot = null;
-        renderTable();
-        updateDashboardUI();
-        // 提交后仍停留在当前独立测试页，只有退出检测时才回主页面
-        dashboard.style.display = 'none';
 
         if (globalTotalCount > 0) {
             const incorrectCount = globalTotalCount - globalCorrectCount;
             const accuracy = ((globalCorrectCount / globalTotalCount) * 100).toFixed(1);
+
+            // 保存历史记录
+            saveTestRecord(currentTestMode, {
+                total: globalTotalCount,
+                correct: globalCorrectCount,
+                accuracy: accuracy,
+                groups: currentTestGroups
+            });
+
+            // 清除草稿
+            clearDraft();
+
+            currentTestSnapshot = null;
+            renderTable();
+            updateDashboardUI();
+            // 提交后仍停留在当前独立测试页，只有退出检测时才回主页面
+            dashboard.style.display = 'none';
 
             summaryTotal.textContent = globalTotalCount;
             summaryCorrect.textContent = globalCorrectCount;
@@ -1645,6 +1893,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
             saveData();
+
+            // 更新草稿
+            if (currentTestMode) {
+                saveDraft(currentTestMode, currentTestGroups);
+            }
+
             renderTable();
             testSummary.style.display = 'none';
             updateTestActionPlacement(false);

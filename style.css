@@ -181,16 +181,44 @@ h2 {
     border-radius: 6px;
     text-align: center;
     transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.status-card .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 4px;
 }
 
 .status-card .label {
     font-size: 12px;
     color: #666;
+    text-align: left;
+}
+
+.record-btn {
+    background: none;
+    border: none;
+    padding: 2px 4px;
+    cursor: pointer;
+    font-size: 14px;
+    opacity: 0.6;
+    transition: opacity 0.2s, transform 0.2s;
+    line-height: 1;
+}
+
+.record-btn:hover {
+    opacity: 1;
+    transform: scale(1.2);
 }
 
 .status-card .value {
     font-weight: bold;
-    margin-top: 5px;
+    margin-top: auto;
+    text-align: left;
 }
 
 .status-card.daily {
@@ -513,6 +541,122 @@ h2 {
 .checkbox-item span {
     font-size: 14px;
     color: #333;
+}
+
+/* 测试记录样式 */
+.records-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.record-item {
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    border: 1px solid #eee;
+}
+
+.record-item:hover {
+    background: #eef2f5;
+    transform: translateX(4px);
+}
+
+.record-item:active {
+    transform: translateX(2px);
+}
+
+.record-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.record-time {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+
+.record-meta {
+    font-size: 12px;
+    color: #888;
+}
+
+.record-accuracy {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.accuracy-high {
+    color: #28a745;
+}
+
+.accuracy-mid {
+    color: #ffc107;
+}
+
+.accuracy-low {
+    color: #dc3545;
+}
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+#record-detail-content {
+    max-height: 400px;
+    overflow-y: auto;
+    font-size: 14px;
+}
+
+.records-empty {
+    text-align: center;
+    padding: 30px 0;
+    color: #999;
+    font-style: italic;
+}
+
+/* 详情页还原表格的缩略样式 */
+.record-detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.record-detail-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.record-detail-table .word {
+    font-weight: bold;
+    width: 40%;
+}
+
+.record-detail-table .result-tag {
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    color: white;
+}
+
+.result-tag.correct {
+    background-color: #28a745;
+}
+
+.result-tag.incorrect {
+    background-color: #dc3545;
 }
 
 /* 排行榜表格样式 */

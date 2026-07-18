@@ -31,7 +31,8 @@
                             <span style="margin-right: 8px;">🏠</span> 学习仪表盘
                         </h3>
                         <div id="stats-summary" class="stats-summary">
-                            <div class="stats-line">总池: <strong id="main-pool-count" class="stats-count-main">0</strong> 组
+                            <div class="stats-line">总池: <strong id="main-pool-count" class="stats-count-main">0</strong>
+                                组
                             </div>
                             <div class="stats-line">A池: <strong id="a-pool-count" class="stats-count-a">0</strong> 组
                             </div>
@@ -58,15 +59,24 @@
 
                 <div class="dashboard-grid">
                     <div class="status-card daily">
-                        <div class="label">今日轻测</div>
+                        <div class="card-top">
+                            <div class="label">今日轻测</div>
+                            <button class="record-btn" data-mode="daily" title="查看记录">📋</button>
+                        </div>
                         <div id="daily-status" class="value">未开始</div>
                     </div>
                     <div class="status-card weekly">
-                        <div class="label">本周复盘</div>
+                        <div class="card-top">
+                            <div class="label">本周复盘</div>
+                            <button class="record-btn" data-mode="weekly" title="查看记录">📋</button>
+                        </div>
                         <div id="weekly-status" class="value">未开始</div>
                     </div>
                     <div class="status-card monthly">
-                        <div class="label">月度总测</div>
+                        <div class="card-top">
+                            <div class="label">月度总测</div>
+                            <button class="record-btn" data-mode="monthly" title="查看记录">📋</button>
+                        </div>
                         <div id="monthly-status" class="value">待唤醒</div>
                     </div>
                 </div>
@@ -210,6 +220,30 @@
                 <div class="confirm-modal-actions">
                     <button id="test-action-cancel-btn" class="btn-secondary-sm confirm-btn-secondary">取消</button>
                     <button id="test-action-confirm-btn" class="btn-primary-sm confirm-btn-primary">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增：测试记录模态框 -->
+    <div id="records-modal" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3 id="records-modal-title">测试记录</h3>
+                <button id="close-records-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="records-list" class="records-list">
+                    <!-- 动态加载记录列表 -->
+                </div>
+                <div id="record-detail-view" style="display: none;">
+                    <div class="detail-header">
+                        <button id="back-to-records-btn" class="btn-secondary-sm">← 返回列表</button>
+                        <span id="detail-record-time" style="font-size: 13px; color: #666;"></span>
+                    </div>
+                    <div id="record-detail-content">
+                        <!-- 详情内容将通过 JS 渲染当时的结果表格 -->
+                    </div>
                 </div>
             </div>
         </div>
