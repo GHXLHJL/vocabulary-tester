@@ -204,7 +204,7 @@ h2 {
     border: none;
     padding: 2px 4px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 18px;
     opacity: 0.6;
     transition: opacity 0.2s, transform 0.2s;
     line-height: 1;
@@ -650,6 +650,10 @@ h2 {
 .record-detail-table td {
     padding: 6px 8px;
     border-bottom: 1px solid #f0f0f0;
+}
+
+.record-detail-table td:last-child {
+    text-align: right;
 }
 
 .record-detail-table .word {
