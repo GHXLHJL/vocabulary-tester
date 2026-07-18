@@ -652,13 +652,19 @@ h2 {
     border-bottom: 1px solid #f0f0f0;
 }
 
-.record-detail-table td:last-child {
-    text-align: right;
-}
-
 .record-detail-table .word {
     font-weight: bold;
-    width: 40%;
+    width: 35%;
+}
+
+.record-detail-table td:nth-child(2) {
+    width: auto;
+}
+
+.record-detail-table td:last-child {
+    text-align: right;
+    width: 70px;
+    padding-right: 10px;
 }
 
 .record-detail-table .result-tag {
