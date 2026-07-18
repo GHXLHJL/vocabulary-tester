@@ -658,25 +658,27 @@ h2 {
 }
 
 .record-detail-table .result-tag {
-    font-size: 14px;
-    padding: 3px 10px;
+    font-size: 15px;
+    padding: 4px 12px;
     border-radius: 4px;
-    color: white;
     font-weight: 900;
     display: inline-block;
-    min-width: 50px;
+    min-width: 54px;
     text-align: center;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
+    line-height: 1.2;
 }
 
 .result-tag.correct {
-    background-color: #28a745;
-    border: 1px solid #1e7e34;
+    color: #1e7e34;
+    background-color: #e6f4ea;
+    border: 2px solid #28a745;
 }
 
 .result-tag.incorrect {
-    background-color: #dc3545;
-    border: 1px solid #bd2130;
+    color: #bd2130;
+    background-color: #fce8e6;
+    border: 2px solid #dc3545;
 }
 
 /* 排行榜表格样式 */
