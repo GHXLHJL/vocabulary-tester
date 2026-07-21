@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.32';
+    const APP_VERSION = 'v26.7.33';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -1972,7 +1972,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    saveTokenBtn.addEventListener('click', () => {
+    saveTokenBtn.addEventListener('click', async () => {
         const token = maimemoTokenInput.value.trim();
         const nickname = userNicknameInput.value.trim();
 
@@ -1984,6 +1984,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         saveData();
+
+        // 优化策略2：同步更新排行榜中的历史昵称
+        if (nickname && systemState.userId && supabase) {
+            try {
+                const { error } = await supabase
+                    .from('leaderboard')
+                    .update({ nickname })
+                    .eq('user_id', systemState.userId);
+
+                if (error) throw error;
+                console.log('排行榜昵称同步成功');
+            } catch (err) {
+                console.error('同步排行榜昵称失败:', err);
+            }
+        }
 
         if (token) {
             alert('设置已保存！已启用墨墨 API 增强模式。');
