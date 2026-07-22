@@ -138,10 +138,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.35';
+    const APP_VERSION = 'v26.7.36';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
+    const PROFILE_STORAGE_KEY = 'vocabulary_tester_profile_v1';
     const MAIMEMO_RESPONSE_WEIGHTS = {
         FORGET: 3,
         VAGUE: 2,
@@ -887,6 +888,59 @@ document.addEventListener('DOMContentLoaded', () => {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
 
+    function normalizeNickname(rawNickname) {
+        const cleaned = (rawNickname || '').trim();
+        return cleaned || '考研战士';
+    }
+
+    function loadProfileData() {
+        try {
+            const stored = localStorage.getItem(PROFILE_STORAGE_KEY);
+            return stored ? JSON.parse(stored) : null;
+        } catch (error) {
+            console.warn('独立昵称档案加载失败:', error);
+            return null;
+        }
+    }
+
+    function saveProfileData() {
+        try {
+            const profile = {
+                userId: systemState.userId || null,
+                nickname: normalizeNickname(systemState.nickname)
+            };
+            localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+        } catch (error) {
+            warnStorageUnavailable(error);
+        }
+    }
+
+    function ensureProfileIntegrity() {
+        const storedProfile = loadProfileData();
+        const inputNickname = userNicknameInput ? userNicknameInput.value.trim() : '';
+
+        if (!systemState.userId && storedProfile?.userId) {
+            systemState.userId = storedProfile.userId;
+        }
+        if (!systemState.userId) {
+            systemState.userId = generateId();
+        }
+
+        const effectiveNickname =
+            systemState.nickname ||
+            storedProfile?.nickname ||
+            inputNickname ||
+            '考研战士';
+
+        systemState.nickname = normalizeNickname(effectiveNickname);
+
+        if (userNicknameInput) {
+            userNicknameInput.value = systemState.nickname;
+        }
+
+        saveProfileData();
+    }
+
     function createDefaultWordGroups() {
         const groups = {};
         defaultWords.forEach(word => {
@@ -956,6 +1010,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 从 LocalStorage 加载数据
     function loadData() {
         try {
+            const storedProfile = loadProfileData();
+
             // 尝试加载新格式 v3.0
             const v3Data = localStorage.getItem(STORAGE_KEY);
             if (v3Data) {
@@ -963,15 +1019,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 wordGroups = parsed.wordGroups || [];
                 // 修复：使用合并方式加载系统状态，防止新字段（如 userId）丢失
                 systemState = { ...systemState, ...(parsed.systemState || {}) };
+                if (storedProfile) {
+                    systemState = {
+                        ...systemState,
+                        userId: systemState.userId || storedProfile.userId || null,
+                        nickname: systemState.nickname || storedProfile.nickname || systemState.nickname
+                    };
+                }
                 maimemoConfig = { ...maimemoConfig, ...(parsed.maimemoConfig || {}) };
                 maimemoWordStatusMap = parsed.maimemoWordStatusMap || {};
 
                 // 核心改进：即使有缓存，也要检查代码中的词库是否有更新
                 syncWithCodeSource();
 
-                // 同步设置界面
+                ensureProfileIntegrity();
                 maimemoTokenInput.value = maimemoConfig.token || '';
-                userNicknameInput.value = systemState.nickname || '考研战士';
                 syncWeaknessToggle.checked = !!maimemoConfig.syncWeakness;
 
                 updateDashboardUI();
@@ -985,6 +1047,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const parsedOld = JSON.parse(oldData);
                     wordGroups = migrateFromV2(parsedOld);
+                    ensureProfileIntegrity();
                     saveData();
                     updateDashboardUI();
                     return;
@@ -995,11 +1058,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 无数据则初始化
             wordGroups = createDefaultWordGroups();
+            ensureProfileIntegrity();
             saveData();
             updateDashboardUI();
         } catch (error) {
             warnStorageUnavailable(error);
             wordGroups = createDefaultWordGroups();
+            ensureProfileIntegrity();
             updateDashboardUI();
         }
     }
@@ -1009,12 +1074,17 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const dataToSave = {
                 wordGroups: wordGroups,
-                systemState: systemState,
+                systemState: {
+                    ...systemState,
+                    nickname: normalizeNickname(systemState.nickname)
+                },
                 maimemoConfig: maimemoConfig,
                 maimemoWordStatusMap: maimemoWordStatusMap,
                 version: '3.0'
             };
+            systemState.nickname = dataToSave.systemState.nickname;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+            saveProfileData();
         } catch (error) {
             warnStorageUnavailable(error);
         }
@@ -1973,6 +2043,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    userNicknameInput.addEventListener('change', () => {
+        const draftNickname = userNicknameInput.value.trim();
+        if (!draftNickname) return;
+        systemState.nickname = normalizeNickname(draftNickname);
+        ensureProfileIntegrity();
+        saveData();
+    });
+
     saveTokenBtn.addEventListener('click', async () => {
         const token = maimemoTokenInput.value.trim();
         const nickname = userNicknameInput.value.trim();
@@ -1981,14 +2059,10 @@ document.addEventListener('DOMContentLoaded', () => {
         maimemoConfig.syncWeakness = syncWeaknessToggle.checked;
 
         if (nickname) {
-            systemState.nickname = nickname;
+            systemState.nickname = normalizeNickname(nickname);
         }
 
-        // 确保 userId 存在
-        if (!systemState.userId) {
-            systemState.userId = generateId();
-        }
-
+        ensureProfileIntegrity();
         saveData();
 
         // 只有真正更新到排行榜行时，才提示“已同步”
@@ -2094,9 +2168,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const confirmed = await openTestActionConfirm('导入数据', '是否完全替换当前数据？(选择“取消”将尝试合并新词组并保留旧进度)');
         if (confirmed) {
             wordGroups = newGroups;
-            systemState = newState || systemState;
-            maimemoConfig = newConfig || maimemoConfig;
+            systemState = { ...systemState, ...(newState || {}) };
+            maimemoConfig = { ...maimemoConfig, ...(newConfig || {}) };
             maimemoWordStatusMap = newWordStatusMap || {};
+            ensureProfileIntegrity();
             saveData();
             return;
         }
@@ -2133,6 +2208,7 @@ document.addEventListener('DOMContentLoaded', () => {
             maimemoWordStatusMap = { ...maimemoWordStatusMap, ...newWordStatusMap };
         }
 
+        ensureProfileIntegrity();
         saveData();
     }
 
@@ -2319,11 +2395,8 @@ document.addEventListener('DOMContentLoaded', () => {
     async function uploadScoreToSupabase(total, correct, accuracy, mode) {
         if (!supabase) return;
 
-        // 首次使用生成 UUID
-        if (!systemState.userId) {
-            systemState.userId = generateId();
-            saveData();
-        }
+        ensureProfileIntegrity();
+        saveData();
 
         try {
             const { error } = await supabase
