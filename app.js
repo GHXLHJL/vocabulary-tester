@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.34';
+    const APP_VERSION = 'v26.7.35';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -1991,18 +1991,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
         saveData();
 
-        // 优化策略2：同步更新排行榜中的历史昵称
+        // 只有真正更新到排行榜行时，才提示“已同步”
         let syncStatus = '';
         if (nickname && supabase) {
             try {
-                const { error } = await supabase
+                const { data: updatedRows, error: updateError } = await supabase
                     .from('leaderboard')
                     .update({ nickname })
-                    .eq('user_id', systemState.userId);
+                    .eq('user_id', systemState.userId)
+                    .select('id');
 
-                if (error) throw error;
-                console.log('排行榜昵称同步成功');
-                syncStatus = '（排行榜昵称已同步）';
+                if (updateError) throw updateError;
+
+                if (Array.isArray(updatedRows) && updatedRows.length > 0) {
+                    console.log(`排行榜昵称同步成功，共更新 ${updatedRows.length} 条记录`);
+                    syncStatus = '（排行榜昵称已同步）';
+                } else {
+                    const { count, error: countError } = await supabase
+                        .from('leaderboard')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('user_id', systemState.userId);
+
+                    if (countError) throw countError;
+
+                    if ((count || 0) > 0) {
+                        console.warn('检测到排行榜存在历史记录，但本次昵称更新未生效');
+                        syncStatus = '（排行榜未更新成功，请稍后重试）';
+                    } else {
+                        syncStatus = '（本地昵称已保存，排行榜暂无历史记录可更新）';
+                    }
+                }
             } catch (err) {
                 console.error('同步排行榜昵称失败:', err);
                 syncStatus = '（排行榜同步失败，将在下次提交时重试）';
