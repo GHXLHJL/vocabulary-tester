@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.33';
+    const APP_VERSION = 'v26.7.34';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -961,8 +961,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (v3Data) {
                 const parsed = JSON.parse(v3Data);
                 wordGroups = parsed.wordGroups || [];
-                systemState = parsed.systemState || systemState;
-                maimemoConfig = parsed.maimemoConfig || maimemoConfig;
+                // 修复：使用合并方式加载系统状态，防止新字段（如 userId）丢失
+                systemState = { ...systemState, ...(parsed.systemState || {}) };
+                maimemoConfig = { ...maimemoConfig, ...(parsed.maimemoConfig || {}) };
                 maimemoWordStatusMap = parsed.maimemoWordStatusMap || {};
 
                 // 核心改进：即使有缓存，也要检查代码中的词库是否有更新
@@ -1983,10 +1984,16 @@ document.addEventListener('DOMContentLoaded', () => {
             systemState.nickname = nickname;
         }
 
+        // 确保 userId 存在
+        if (!systemState.userId) {
+            systemState.userId = generateId();
+        }
+
         saveData();
 
         // 优化策略2：同步更新排行榜中的历史昵称
-        if (nickname && systemState.userId && supabase) {
+        let syncStatus = '';
+        if (nickname && supabase) {
             try {
                 const { error } = await supabase
                     .from('leaderboard')
@@ -1995,15 +2002,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (error) throw error;
                 console.log('排行榜昵称同步成功');
+                syncStatus = '（排行榜昵称已同步）';
             } catch (err) {
                 console.error('同步排行榜昵称失败:', err);
+                syncStatus = '（排行榜同步失败，将在下次提交时重试）';
             }
         }
 
         if (token) {
-            alert('设置已保存！已启用墨墨 API 增强模式。');
+            alert(`设置已保存！已启用墨墨 API 增强模式。${syncStatus}`);
         } else {
-            alert('设置已保存！');
+            alert(`设置已保存！${syncStatus}`);
         }
 
         settingsModal.classList.remove('open');
