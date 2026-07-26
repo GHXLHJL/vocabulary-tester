@@ -270,11 +270,11 @@ rub 摩擦
 dub 给…起绰号
 cub 幼崽
 
-device 设备 
-devise 发明 
-advise 建议 
-advice 建议 
-revise 校阅
+device 设备/方法
+devise 发明/设计
+advise 建议/通知
+advice 建议/意见
+revise 修订/改变/复习
 
 evolution 进化
 resolution 决定/决心

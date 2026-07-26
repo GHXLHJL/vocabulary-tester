@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.52';
+    const APP_VERSION = 'v26.7.53';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -499,11 +499,11 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 53, word: 'rub', expectedAnswer: '摩擦', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 53, word: 'dub', expectedAnswer: '给…起绰号', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 53, word: 'cub', expectedAnswer: '幼崽', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 54, word: 'device', expectedAnswer: '设备', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 54, word: 'devise', expectedAnswer: '发明', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 54, word: 'advise', expectedAnswer: '建议', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 54, word: 'advice', expectedAnswer: '建议', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 54, word: 'revise', expectedAnswer: '校阅', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 54, word: 'device', expectedAnswer: '设备/方法', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 54, word: 'devise', expectedAnswer: '发明/设计', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 54, word: 'advise', expectedAnswer: '建议/通知', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 54, word: 'advice', expectedAnswer: '建议/意见', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 54, word: 'revise', expectedAnswer: '修订/改变/复习', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 55, word: 'evolution', expectedAnswer: '进化', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 55, word: 'resolution', expectedAnswer: '决定/决心', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 55, word: 'revelation', expectedAnswer: '揭露', userAnswer: '', isCorrect: null },
@@ -950,6 +950,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 138, word: 'bid', expectedAnswer: '出价/努力', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 138, word: 'hid(hide)', expectedAnswer: '躲藏', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 138, word: 'rid', expectedAnswer: '摆脱/除去', userAnswer: '', isCorrect: null },
+
 
 
 
