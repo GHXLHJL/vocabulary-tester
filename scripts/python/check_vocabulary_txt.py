@@ -21,7 +21,9 @@ python check_vocabulary_txt.py [file_path]
 from __future__ import annotations
 
 from collections import defaultdict
+import json
 from pathlib import Path
+import re
 from urllib import request
 import difflib
 import sys
@@ -34,6 +36,8 @@ GENERAL_WORDLIST_CACHE_FILE = CACHE_DIR / ".english_words_cache.txt"
 GENERAL_WORDLIST_URL = "https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt"
 KAOYAN_WORDLIST_CACHE_FILE = CACHE_DIR / ".kaoyan_words_cache.txt"
 KAOYAN_WORDLIST_URL = "https://raw.githubusercontent.com/busiyiworld/maimemo-export/main/exported/word/%E8%80%83%E7%A0%94%E8%8B%B1%E8%AF%AD%E5%A4%A7%E7%BA%B2%E8%AF%8D%E6%B1%875500.txt"
+LOCAL_RAW_DICT_FILE = PROJECT_ROOT / "kaoyan_dict_raw.json"
+LOCAL_APP_JS_FILE = PROJECT_ROOT / "app.js"
 
 
 def load_wordlist(cache_file: Path, source_url: str) -> tuple[set[str], bool]:
@@ -66,6 +70,30 @@ def load_wordlist(cache_file: Path, source_url: str) -> tuple[set[str], bool]:
 
     words = {line.strip().lower() for line in content.splitlines() if line.strip()}
     return words, bool(words)
+
+
+def load_local_project_words() -> set[str]:
+    words: set[str] = set()
+
+    if LOCAL_RAW_DICT_FILE.exists():
+        try:
+            raw_dict = json.loads(LOCAL_RAW_DICT_FILE.read_text(encoding="utf-8"))
+            if isinstance(raw_dict, dict):
+                for key in raw_dict.keys():
+                    if isinstance(key, str) and key.strip():
+                        words.add(key.strip().lower())
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    if LOCAL_APP_JS_FILE.exists():
+        try:
+            app_js = LOCAL_APP_JS_FILE.read_text(encoding="utf-8")
+            for match in re.finditer(r"\bword:\s*['\"]([A-Za-z][A-Za-z()'\\-]*)['\"]", app_js):
+                words.add(match.group(1).strip().lower())
+        except OSError:
+            pass
+
+    return words
 
 
 def parse_words(file_path: Path) -> list[dict[str, object]]:
@@ -249,7 +277,8 @@ def main() -> int:
     rows = parse_words(file_path)
     general_words, general_ready = load_wordlist(GENERAL_WORDLIST_CACHE_FILE, GENERAL_WORDLIST_URL)
     kaoyan_words, kaoyan_ready = load_wordlist(KAOYAN_WORDLIST_CACHE_FILE, KAOYAN_WORDLIST_URL)
-    dictionary_words = general_words | kaoyan_words
+    local_project_words = load_local_project_words()
+    dictionary_words = general_words | kaoyan_words | local_project_words
     dictionary_ready = bool(dictionary_words) and (general_ready or kaoyan_ready)
 
     duplicates = find_duplicates(rows)

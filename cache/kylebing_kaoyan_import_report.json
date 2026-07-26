@@ -1,0 +1,11 @@
+{
+  "source": "kylebing_kaoyan_9602.txt",
+  "targetCount": 6007,
+  "existingCount": 5057,
+  "sourceUniqueCount": 5047,
+  "missingCountBeforeImport": 0,
+  "addedCount": 0,
+  "newCount": 5057,
+  "remainingMissingCount": 0,
+  "sampleAddedWords": []
+}

@@ -2,7 +2,40 @@
 ascribe 将…归因于/认为…具有
 prescribe 开药/规定
 subscribe 订阅/同意
-describe 描述
+describe 描述/形容
+
+modify 更改/修改
+commodity 商品/日用品
+accommodate 适应/容纳
+commercial 商业（的）/广告
+
+conscious 意识到的/有意的
+subconscious 下意识（的）
+conscience 良心/良知
+
+averse 反对的/讨厌的
+adverse 不利的/有害的
+reverse 相反的/逆转
+reversible 可逆的
+inverse （位置）相反的
+converse （说法）相反的/交谈
+diverse 不同的/多种多样的
+universal 多方面的/普遍的
+controversial 有争议的
+
+setback 挫折/阻碍
+feedback 反馈
+drawback 缺点/不利条件
+
+emit 散发/发出
+omit 遗漏/忽略
+submit 屈服/提交
+transmit 传送/传输
+
+vision 视力/远见
+visual 看得见的/视觉的
+visible 看得见的/明显的
+visitation 显现/拜访
 
 gun 枪
 guy 家伙/男人
@@ -10,7 +43,22 @@ gum 口香糖/牙龈
 gym 健身房/体育馆
 gay 同性恋
 
-leather 皮革
+abnormal 不正常的/反常的
+abnormality 变态/异常
+norm 规范/准则
+enormous 巨大的
+
+abound 充满/丰富
+abundant 大量的/充足的
+abundance 丰富/充足
+
+dissolve （使）溶解/解散
+solution 解答/解决办法
+soluble 可溶的
+resolve 决心/解决
+resolute 坚决的/果断的
+
+leather 皮（革）
 feather 羽毛
 
 shortcoming 缺点/缺陷
@@ -94,10 +142,11 @@ award 奖品/授予
 reward 奖赏/酬金
 coward 胆小鬼/懦夫
 awkward 尴尬的/难办的
+outward 外面的/向外（的）
 
 beat 击败/跳动
 beast 野兽/凶残的人
-breast 胸部/乳房
+breast 胸（部）/乳房
 bear 承受/带有/熊
 beard 胡子/胡须
 
@@ -182,24 +231,24 @@ cherish 珍爱/怀念
 perish 死亡
 nourish 滋养
 
-perspective 观点
-prospective 可能的
+perspective 观点/视角
+prospective 可能的/潜在的
 perceptive 有洞察力的
-respective 分别的
+respective 分别的/各自的
 susceptive 敏感的
-retrospective 回想的
-introspective 自省的
+retrospective 回想的/回顾的
+introspective 自省的/反省的
 
 gene 基因   
 genesis 起源
-general 普通的
-generic 一般的
+general 将军/普通的
+generic 一般的/普通的
 genetic 基因的
 generate 产生
 generation 一代（人）
 generalize 概括/推广
 generous 慷慨的
-genre 类型
+genre 类型/种类
 generalization 概括
 
 climb攀爬
@@ -228,7 +277,7 @@ advice 建议
 revise 校阅
 
 evolution 进化
-resolution 决定
+resolution 决定/决心
 revelation 揭露
 revolution 革命
 
@@ -304,7 +353,7 @@ scorn 蔑视
 corn 玉米
 ore 矿
 sore 痛处
-core 核心
+core 核（心）
 scar 伤痕
 
 stationary 静止的
@@ -354,7 +403,7 @@ wipe 擦
 wife 妻子
 whip 党鞭/鞭子
 
-ventilate  使通风
+ventilate  （使）通风
 versatile 多才多艺的
 volatile 易发挥的/易变的
 
@@ -512,14 +561,21 @@ segregate （使）隔离/分开
 convention 习俗/大会
 contention 争论/观点
 
-contract 合同
-contrast 差异
-contrary 相反的
-controversy 争论
+subtract 减去/减掉
+attract 吸引/招引
+attractive 吸引人的
+distract 分散/（使）分心
+abstract 抽象（派）的/摘要
+extract 抽出/选段
+extraction 提取/拔牙
+contract 合同/感染
+contrast 差异/对比
+contrary 相反（的）
+controversy 争论/争议
 
-mount 发起
-amount 数量
-account 账户
+mount 发起/登上/山
+amount 数量/解释
+account 账户/等同
 
 literate 识字的/有文化的
 illiterate 文盲（的）
@@ -530,16 +586,16 @@ literary 文学的
 liberal 开放的
 liberty 自由
 
-property 财产
-poverty 贫穷的
-proper 恰当的
-prosper 繁荣
-prospect 可能性
+property 财产/房地产
+poverty 贫穷
+proper 恰当的/得体的
+prosper 繁荣/成功
+prospect 前景/可能性
 
-reproach 责备
-approach 接近
-approval 赞成
-appear 出现
+reproach 责备/批评
+approach 接近/方法
+approval 赞成/批准
+appear 出现/看起来
 
 inflict （使）遭受
 conflict 冲突
@@ -548,24 +604,24 @@ delicate 精美的
 dedicate 献身于
 indicate 表明
 
-distinguish 区分
-distinguished 卓著的
-extinguish 熄灭
-extinct 已灭绝的
-distinction 差别
-distinct 截然不同的
-instinct 本能
+distinguish 区分/辨别
+distinguished 卓著的/杰出的
+extinguish 熄灭/毁灭
+extinct （已）灭绝的/消亡的
+distinction 差别/优秀
+distinct 明确的/截然不同的
+instinct 本能/直觉
 
-attempt 尝试
-contempt 鄙视
-tempt 引诱
+attempt 尝试/试图
+contempt 鄙视/轻蔑
+tempt 引诱/劝说
 temptation 诱惑
-temple 寺院
-template 模版
+temple 寺院/寺庙
+template 模版/样板
 contemplate 思考
-tempo 节奏
-temporal 短暂的
-temporary 暂时的
+tempo 节奏/速度
+temporal 短暂的/世俗的
+temporary 暂时的/临时的
 hamper 阻碍
 
 cape 披风
@@ -583,39 +639,39 @@ precious 珍贵的
 previous 先前的
 precise 精确的
 
-conceive 想象
-perceive 看待
-receive 收到
-deceive 欺骗
+conceive 想象/怀孕
+perceive 看待/注意到
+receive 收到/受到
+deceive 欺骗/误导
 
 sufficient 充足的
 efficient 效率高的
 
 evaporate 消失/蒸发
-escalate 扩大
-evaluate 评价
-estimate 估计
-eliminate 消除
-simulate 假装
-stimulate 刺激
-calculate 计算
-speculate 推测
-stipulate 规定
+escalate 扩大/升级
+evaluate 评价/评估
+estimate 估计/估算
+eliminate 消除/淘汰
+simulate 假装/模拟
+stimulate 刺激/激励
+calculate 计算/预测
+speculate 推测/思索
+stipulate 规定/约定
 
 spectrum 光谱/范围
 spectacle 景象/眼镜
 spectacular 壮观的
 speculative 猜测的
 
-repeal 废止
-repel 驱逐
-rebel 反抗
-dispel 驱散
-impel 促使
-compel 强迫
-propel 推动
-expel 开除
-excel 擅长
+repeal 废止/废除
+repel 驱逐/厌恶
+rebel 反抗（者）/造反
+dispel 驱散/消除
+impel 促使/驱使
+compel 强迫/逼迫
+propel 推动/促使
+expel 开除/驱逐
+excel 擅长/超越
 
 gas 气体
 gasp 喘气
@@ -629,15 +685,15 @@ incentive 激励
 intensive 密集的
 inclusive 包括的
 
-assure （人）保证
-insure （钱）给…买保险
+assure （人）确保/保证
+insure （钱）确保/给…买保险
 ensure （事）确保
-secure （资源）获得/（使）安全
+secure （资源）获得/（使）安全（的）
 
 equality 平等
 quantity 数量
 quality 质量
-qualify 使合格
+qualify （使）有资格/取得资格
 
 vigorous 精力旺盛的
 rigorous 严厉的
@@ -688,6 +744,7 @@ assist 帮助/促进
 persist 坚持/持续
 resist 抵制/忍住
 consist 由...组成
+
 roast 烘烤/烤肉
 boast 自夸/拥有
 boost 增长/促进
@@ -728,7 +785,6 @@ wonder 想知道/奇观/惊讶
 gender 性别
 ponder 考虑
 
-abstract 抽象的/摘要
 subject 主题/（使）遭受
 object 物体/反对/对象
 inject 注射/增添
