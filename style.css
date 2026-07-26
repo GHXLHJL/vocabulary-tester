@@ -680,33 +680,31 @@ h2 {
 }
 
 .record-detail-table td:nth-child(2) {
-    width: auto;
+    width: 38%;
 }
 
 .record-detail-table td:last-child {
-    text-align: right;
-    width: 70px;
-    padding-right: 10px;
+    width: 27%;
 }
 
-.record-detail-table .result-tag {
-    font-size: 13px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-weight: bold;
-    display: inline-block;
-    min-width: 46px;
-    text-align: center;
+.record-detail-table .record-answer-cell {
+    font-weight: 700;
+    border-radius: 0;
 }
 
-.result-tag.correct {
+.record-detail-table .record-answer-cell.correct {
     color: #28a745;
     background-color: #d4edda;
 }
 
-.result-tag.incorrect {
+.record-detail-table .record-answer-cell.incorrect {
     color: #dc3545;
     background-color: #f8d7da;
+}
+
+.record-detail-table .record-meaning-cell {
+    color: #0056b3;
+    font-weight: 700;
 }
 
 /* 排行榜表格样式 */

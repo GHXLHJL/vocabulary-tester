@@ -1296,10 +1296,15 @@ document.addEventListener('DOMContentLoaded', () => {
         record.groups.forEach(group => {
             group.words.forEach(word => {
                 const tr = document.createElement('tr');
+                const rawAnswerText = (word.userAnswer || '').trim();
+                const answerText = (!word.isCorrect && rawAnswerText === '未填写')
+                    ? ''
+                    : rawAnswerText;
+                const expectedMeaning = word.expectedAnswer || '';
                 tr.innerHTML = `
                     <td class="word">${word.word}</td>
-                    <td>${word.userAnswer || ''}</td>
-                    <td><span class="result-tag ${word.isCorrect ? 'correct' : 'incorrect'}">${word.isCorrect ? '正确' : '错误'}</span></td>
+                    <td class="record-answer-cell ${word.isCorrect ? 'correct' : 'incorrect'}">${answerText}</td>
+                    <td class="record-meaning-cell">${expectedMeaning}</td>
                 `;
                 table.appendChild(tr);
             });
