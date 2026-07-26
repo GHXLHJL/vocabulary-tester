@@ -35,3 +35,22 @@
 - 已再次验证 `report.txt`、`exception_report.txt` 和 `validate_global_synonyms.js` 结果，当前异常报告为 `0`，同义词校验全部通过。
 - 已抽查新增样例词 `logo`、`afloat`、`composure`、`marketplace`、`visualize`、`whereby`，均可在 `kaoyan_dict.json` 正常读取。
 - 已同步更新 `APP_VERSION` 到 `v26.7.47`，并更新前端脚本缓存版本。
+- 已按 [优化策略3.md](file:///e:/project/trae/study/%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A53.md) 开始实施 Phase 4 参数优化。
+- 已在 [app.js](file:///e:/project/trae/study/app.js) 中将 `dailyDrawCount` 落地为 `20`，并新增 `weakTierWeight = 5`、周/月测试最小间隔与周复盘动态题量配置。
+- 已实现 `awakenExpiredAPoolGroups()`，使 A 池词组在停留满 `30` 天后自动回到总池 `fuzzy` 档，不再只靠月测被动回炉。
+- 已将周测/月测入口改为“带冷却提示的二次确认”，避免高频误点造成状态污染。
+- 已将月度总测改为“提交后分层回炉”，不再在开测前整池打回总池。
+- 已同步修正 [优化策略3.md](file:///e:/project/trae/study/%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A53.md) 中关于权重策略与实施优先级的前后不一致问题。
+- 已执行 `node --check app.js`，语法校验通过。
+- 已同步更新 `APP_VERSION` 到 `v26.7.49`。
+- 已开始处理“每日排行 / 每月排行”拆分需求。
+- 已将顶部按钮从“排行榜 / 墨墨API”调整为“每日排行 / 每月排行”，并同步修改 [index.html](file:///e:/project/trae/study/index.html) 弹窗标题节点。
+- 已在 [app.js](file:///e:/project/trae/study/app.js) 中新增按 `test_mode` 分流的排行榜查询逻辑，分别读取 `daily` 与 `monthly` 数据。
+- 已将原“墨墨API”顶部按钮改为可空安全，避免 DOM 移除后初始化报错。
+- 已同步调整 [style.css](file:///e:/project/trae/study/style.css) 中工具按钮宽度、居中和配色，保证三个模块上下对齐。
+- 已同步更新前端缓存串：`APP_VERSION` 为 `v26.7.50`，`index.html` 中的 `app.js` 与 `style.css` 查询串均已刷新。
+- 已再次执行 `node --check app.js`，语法校验通过。
+- 已按“保持目录整洁”的要求清理一批未接入项目的临时文件。
+- 已删除 `scripts/node/` 下未被项目引用的 `debug/check/extract/verify` 类探索脚本，以及对应的调试产物 `debug_momo.log`、`page_279.png`。
+- 已删除无项目引用的临时文件 [momo_words.json](file:///e:/project/trae/study/momo_words.json)、[suspicious_words.json](file:///e:/project/trae/study/suspicious_words.json) 和未进入正式流程的 [import_kylebing_kaoyan.js](file:///e:/project/trae/study/scripts/node/import_kylebing_kaoyan.js)。
+- 已保留仍有明确用途或审计价值的文件，如 `collocation_report.txt`、`kaoyan_dict_backup_v1.json`、`cache/` 下的候选词表与导入报告。

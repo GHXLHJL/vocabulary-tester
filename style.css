@@ -178,7 +178,7 @@ h2 {
     align-items: flex-end;
     gap: 10px;
     flex-shrink: 0;
-    width: 112px;
+    width: 132px;
 }
 
 .dashboard-grid {
@@ -326,6 +326,7 @@ h2 {
 .leaderboard-btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     padding: 7px 12px;
     border: none;
@@ -337,6 +338,9 @@ h2 {
     cursor: pointer;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
     transition: transform 0.2s, filter 0.2s, box-shadow 0.2s;
+    width: 100%;
+    min-height: 40px;
+    text-align: center;
 }
 
 .leaderboard-btn:hover {
@@ -355,7 +359,12 @@ h2 {
     color: #5a6776;
 }
 
-.maimemo-api-btn {
+.daily-leaderboard-btn {
+    background: #fff3cd;
+    color: #8a5800;
+}
+
+.monthly-leaderboard-btn {
     background: #eaf7ee;
     color: #257942;
 }
@@ -1364,11 +1373,6 @@ td input[type="text"][readonly]:focus {
         line-height: 1.35;
         text-align: center;
         justify-content: center;
-    }
-
-    #sync-maimemo-btn {
-        grid-column: 1 / -1;
-        margin-right: 0 !important;
     }
 
     #add-word-form {

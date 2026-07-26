@@ -68,3 +68,30 @@
   - 性能红线：`1572864 bytes`
   - 异常报告条数：`0`
 - 同步复跑 [validate_global_synonyms.js](file:///e:/project/trae/study/scripts/validate_global_synonyms.js) 后，66 组全局同义词仍全部通过护栏校验，没有出现重复词冲突或结构问题。
+
+## 学习策略分析 (2026-07-26)
+
+### “小容量、高频率”策略的科学性 (Strategy 3)
+- **记忆强度补偿**：将单次题量减少 33%（30->20）虽然降低了瞬时压力，但通过提高测试频率（两天一测 -> 每天一测）使每周接触总量提升了约 **33%**。
+- **权重修正逻辑**：在抽样池缩小时，薄弱词（weak）的被选概率会稀释。通过将权重从 3 提升至 **5**，可以确保薄弱词在 20 组的抽样中依然占据核心地位。
+- **正向激励循环**：月度总测引入“分层回炉”机制。对于真正掌握的词（正确率 >= 80%）不再强制回炉，这符合艾宾浩斯遗忘曲线中“长时记忆”的特点，能有效减少无效劳动。
+- **系统稳定性防护**：周测与月测的频率护栏是防止 LocalStorage 数据在非正常点击下产生统计偏差的关键。
+
+## Phase 4 实施结果
+- [app.js](file:///e:/project/trae/study/app.js) 已正式落地 Strategy 3 的核心参数：`dailyDrawCount = 20`、`weakTierWeight = 5`、`weeklyMinIntervalDays = 7`、`monthlyMinIntervalDays = 25`。
+- 周复盘逻辑已由固定比例改为动态抽题：`A池 < 15` 时全量抽取，否则按 `20%` 抽取且不少于 `10` 组。
+- 新增 `awakenExpiredAPoolGroups()`，使 `awakenDays = 30` 不再只停留在文档层，而会在测试开始前把超期 A 池词组唤醒回总池。
+- 月度总测改为“只抽样、不预先打回”，真正的池子迁移发生在提交后，避免测试开始前就污染 A 池状态。
+- [优化策略3.md](file:///e:/project/trae/study/%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A53.md) 中原先“正文建议已调整、优先级表却写先观察再调”的内部矛盾已同步修正。
+
+## Phase 5 发现
+- 现有排行榜上传逻辑 [uploadScoreToSupabase](file:///e:/project/trae/study/app.js) 本身已经携带 `test_mode`，因此“每日排行 / 每月排行”拆分无需改数据库结构，只需改前端查询口径。
+- 原顶部“排行榜”与“墨墨API”按钮实际占据同一层级的产品入口，用户感知上更像两个榜单入口，因此改成“每日排行 / 每月排行”是自然的 UI 演进。
+- 原顶部“墨墨API”按钮删除后，墨墨弱点同步功能仍保留在设置与本地权重计算链路中，不会影响已有数据结构和弱点加权能力。
+- 这轮最稳妥的做法是“复用同一个排行榜弹窗 + 动态标题 + 按 `test_mode` 过滤”，既能最小改动，也能保持交互一致性。
+
+## 目录清理结论
+- `scripts/node/` 中大量 `debug_*.py`、`check_*.py`、`extract_momo_v*.py`、`verify_*.py` 属于阶段性探索脚本，未被主流程引用，适合清理。
+- `debug_momo.log` 与 `page_279.png` 属于前述探索脚本生成的调试产物，可安全删除。
+- [momo_words.json](file:///e:/project/trae/study/momo_words.json) 与 [suspicious_words.json](file:///e:/project/trae/study/suspicious_words.json) 当前无项目引用，且不在正式工作流中，适合删除。
+- `collocation_report.txt` 仍由 [clean_kaoyan_dict.js](file:///e:/project/trae/study/scripts/clean_kaoyan_dict.js) 生成并引用，不应误删。

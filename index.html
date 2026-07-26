@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>小七哥单词自测工具</title>
-    <link rel="stylesheet" href="style.css?v=26.7.24">
+    <link rel="stylesheet" href="style.css?v=26.7.50">
 </head>
 
 <body>
@@ -43,13 +43,15 @@
                             <span class="leaderboard-btn-icon">⚙️</span>
                             <span>设置</span>
                         </button>
-                        <button id="view-leaderboard-btn" class="leaderboard-btn" title="查看排行榜">
+                        <button id="view-daily-leaderboard-btn" class="leaderboard-btn daily-leaderboard-btn"
+                            title="查看每日排行">
                             <span class="leaderboard-btn-icon">🏆</span>
-                            <span>排行榜</span>
+                            <span>每日排行</span>
                         </button>
-                        <button id="sync-maimemo-btn" class="leaderboard-btn maimemo-api-btn" title="同步墨墨弱点">
-                            <span class="leaderboard-btn-icon">🔄</span>
-                            <span>墨墨API</span>
+                        <button id="view-monthly-leaderboard-btn" class="leaderboard-btn monthly-leaderboard-btn"
+                            title="查看每月排行">
+                            <span class="leaderboard-btn-icon">📅</span>
+                            <span>每月排行</span>
                         </button>
                     </div>
                 </div>
@@ -188,7 +190,7 @@
     <div id="leaderboard-modal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
-                <h3>🏆 学习排行榜（前10名）</h3>
+                <h3 id="leaderboard-modal-title">🏆 排行榜（前10名）</h3>
                 <button id="close-leaderboard-btn" class="close-btn">&times;</button>
             </div>
             <div class="modal-body">
@@ -251,7 +253,7 @@
 
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=26.7.47"></script>
+    <script src="app.js?v=26.7.50"></script>
 </body>
 
 </html>

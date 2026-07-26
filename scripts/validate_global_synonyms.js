@@ -3,6 +3,12 @@ const path = require('path');
 const vm = require('vm');
 
 const APP_JS_PATH = path.join(__dirname, '..', 'app.js');
+const COMPATIBILITY_CHAR_MAP = {
+    '⺠': '民', '⻓': '长', '⻋': '车', '⻅': '见', '⻉': '贝', '⻔': '门',
+    '⻆': '角', '⻛': '风', '⻝': '食', '⻢': '马', '⻜': '飞', '⻩': '黄',
+    '⻥': '鱼', '⻦': '鸟', '⻬': '齐', '⻤': '鬼', '⻚': '页', '⻣': '骨',
+    '⻘': '青', '⻰': '龙', '⻮': '齿', '⺓': '纟', '⻨': '麦'
+};
 
 function extractGlobalSynDict() {
     const source = fs.readFileSync(APP_JS_PATH, 'utf8');
@@ -17,7 +23,10 @@ function extractGlobalSynDict() {
 
 function normalizeAnswerString(str) {
     if (!str) return '';
-    return str.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '');
+    return [...str.normalize('NFKC')]
+        .map(char => COMPATIBILITY_CHAR_MAP[char] || char)
+        .join('')
+        .replace(/[^\u4e00-\u9fffa-zA-Z0-9]/g, '');
 }
 
 function createSynonymMap(groups) {

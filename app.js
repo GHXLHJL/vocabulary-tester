@@ -23,6 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportDataBtn = document.getElementById('export-data-btn');
     const importDataBtn = document.getElementById('import-data-btn');
     const syncMaimemoBtn = document.getElementById('sync-maimemo-btn');
+    const viewDailyLeaderboardBtn = document.getElementById('view-daily-leaderboard-btn');
+    const viewMonthlyLeaderboardBtn = document.getElementById('view-monthly-leaderboard-btn');
     const testerHeader = document.querySelector('.tester-header');
     const wordTable = document.getElementById('word-table');
 
@@ -45,8 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingNavOverlay = document.getElementById('floating-nav-overlay');
 
     // 排行榜 DOM
-    const viewLeaderboardBtn = document.getElementById('view-leaderboard-btn');
     const leaderboardModal = document.getElementById('leaderboard-modal');
+    const leaderboardModalTitle = document.getElementById('leaderboard-modal-title');
     const closeLeaderboardBtn = document.getElementById('close-leaderboard-btn');
     const leaderboardLoading = document.getElementById('leaderboard-loading');
     const leaderboardContent = document.getElementById('leaderboard-content');
@@ -138,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.47';
+    const APP_VERSION = 'v26.7.50';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -227,12 +229,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 优化方案参数配置
     const SETTINGS = {
-        dailyDrawCount: 30,      // 每日抽取词组数
+        dailyDrawCount: 20,      // 每日抽取词组数
         minIntervalDays: 2,      // 抽题最小间隔
         graduationThreshold: 0.8, // 毕业正确率阈值 (最近3次平均)
         minSingleRate: 0.6,      // 毕业最低单次线
+        weakTierWeight: 5,       // 薄弱词组权重补偿
+        newTierWeight: 3,        // 新词基础权重
         weeklyReviewRatio: 0.2,   // 周复盘抽取比例
+        weeklyMinGroups: 10,     // 周复盘最少题量
+        weeklyAllThreshold: 15,  // A池较小时全量复盘阈值
+        weeklyMinIntervalDays: 7, // 周复盘建议最小间隔
         weeklyDegradation: 0.7,   // 周复盘退化线
+        monthlyMinIntervalDays: 25, // 月度总测建议最小间隔
         monthlyDegradation: 0.6,  // 月度总测退化线
         awakenDays: 30,          // A池强制唤醒周期
         stuckDays: 7             // 防卡死天数
@@ -1290,6 +1298,71 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem(DRAFT_STORAGE_KEY);
     }
 
+    function getTodayDateString() {
+        return new Date().toLocaleDateString();
+    }
+
+    function parseStoredDate(value) {
+        if (!value) return null;
+
+        const directDate = new Date(value);
+        if (!Number.isNaN(directDate.getTime())) {
+            return directDate;
+        }
+
+        const match = String(value).match(/^(\d{4})[\/.-](\d{1,2})[\/.-](\d{1,2})$/);
+        if (!match) {
+            return null;
+        }
+
+        return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+
+    function getElapsedDaysFromStoredDate(value) {
+        const parsedDate = parseStoredDate(value);
+        if (!parsedDate) return null;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        parsedDate.setHours(0, 0, 0, 0);
+        return Math.floor((today - parsedDate) / (1000 * 60 * 60 * 24));
+    }
+
+    function buildRetestConfirmMessage(modeLabel, defaultMessage, lastDate, minIntervalDays) {
+        const elapsedDays = getElapsedDaysFromStoredDate(lastDate);
+        if (elapsedDays === null || elapsedDays >= minIntervalDays) {
+            return defaultMessage;
+        }
+
+        const remainingDays = Math.max(minIntervalDays - elapsedDays, 0);
+        return `${defaultMessage}\n\n距上次${modeLabel}仅 ${elapsedDays} 天，建议至少间隔 ${minIntervalDays} 天；当前还差 ${remainingDays} 天。确定要提前开始吗？`;
+    }
+
+    function awakenExpiredAPoolGroups() {
+        const now = new Date();
+        let changed = false;
+
+        wordGroups.forEach(groupObj => {
+            if (groupObj.pool !== 'a' || !groupObj.enteredAPoolDate) {
+                return;
+            }
+
+            const enteredDate = new Date(groupObj.enteredAPoolDate);
+            const diffDays = (now - enteredDate) / (1000 * 60 * 60 * 24);
+            if (diffDays >= SETTINGS.awakenDays) {
+                groupObj.pool = 'main';
+                groupObj.tier = 'fuzzy';
+                groupObj.enteredAPoolDate = null;
+                changed = true;
+            }
+        });
+
+        if (changed) {
+            saveData();
+            updateDashboardUI();
+        }
+    }
+
     async function checkDraftOnStart(mode) {
         const draft = loadDraft();
         if (draft && draft.mode === mode) {
@@ -1320,14 +1393,32 @@ document.addEventListener('DOMContentLoaded', () => {
         mainPoolCount.textContent = mainPool.length;
         aPoolCount.textContent = aPool.length;
 
-        const today = new Date().toLocaleDateString();
+        const today = getTodayDateString();
 
         dailyStatus.textContent = systemState.lastDailyTestDate === today ? '已完成' : '未开始';
         dailyStatus.style.color = systemState.lastDailyTestDate === today ? '#28a745' : '#666';
 
-        // 每周/月逻辑简化显示
-        weeklyStatus.textContent = systemState.lastWeeklyReviewDate ? `上次:${systemState.lastWeeklyReviewDate}` : '待进行';
-        monthlyStatus.textContent = systemState.lastMonthlyTestDate ? `上次:${systemState.lastMonthlyTestDate}` : '待进行';
+        const weeklyElapsedDays = getElapsedDaysFromStoredDate(systemState.lastWeeklyReviewDate);
+        if (!systemState.lastWeeklyReviewDate) {
+            weeklyStatus.textContent = '待进行';
+        } else if (weeklyElapsedDays === null) {
+            weeklyStatus.textContent = `上次:${systemState.lastWeeklyReviewDate}`;
+        } else if (weeklyElapsedDays >= SETTINGS.weeklyMinIntervalDays) {
+            weeklyStatus.textContent = `可进行（上次:${systemState.lastWeeklyReviewDate}）`;
+        } else {
+            weeklyStatus.textContent = `冷却中，还差 ${SETTINGS.weeklyMinIntervalDays - weeklyElapsedDays} 天`;
+        }
+
+        const monthlyElapsedDays = getElapsedDaysFromStoredDate(systemState.lastMonthlyTestDate);
+        if (!systemState.lastMonthlyTestDate) {
+            monthlyStatus.textContent = '待进行';
+        } else if (monthlyElapsedDays === null) {
+            monthlyStatus.textContent = `上次:${systemState.lastMonthlyTestDate}`;
+        } else if (monthlyElapsedDays >= SETTINGS.monthlyMinIntervalDays) {
+            monthlyStatus.textContent = `可进行（上次:${systemState.lastMonthlyTestDate}）`;
+        } else {
+            monthlyStatus.textContent = `冷却中，还差 ${SETTINGS.monthlyMinIntervalDays - monthlyElapsedDays} 天`;
+        }
     }
 
     function getMaimemoStatusWeight(status) {
@@ -1447,6 +1538,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ==== 核心抽题算法 ====
     function generateDailyTest() {
+        awakenExpiredAPoolGroups();
         const today = new Date();
         const availableGroups = wordGroups.filter(g => {
             if (g.pool !== 'main') return false;
@@ -1470,7 +1562,8 @@ document.addEventListener('DOMContentLoaded', () => {
             let weight = 1;
 
             // 基础权重判定
-            if (g.tier === 'weak' || g.tier === 'new') weight = 3;
+            if (g.tier === 'weak') weight = SETTINGS.weakTierWeight;
+            else if (g.tier === 'new') weight = SETTINGS.newTierWeight;
             else if (g.tier === 'fuzzy') weight = 1;
 
             // 墨墨 API 增强权重：根据最近反馈状态动态调整
@@ -1484,7 +1577,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 随机抽取 30 组
+        // 随机抽取设定题量
         const selected = [];
         const count = Math.min(SETTINGS.dailyDrawCount, availableGroups.length);
         const usedIndices = new Set();
@@ -1504,13 +1597,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function generateWeeklyReview() {
+        awakenExpiredAPoolGroups();
         const aPool = wordGroups.filter(g => g.pool === 'a');
         if (aPool.length === 0) {
             alert('A池（熟练池）目前为空，请先完成每日轻测以积累熟练词！');
             return [];
         }
 
-        const count = Math.max(5, Math.floor(aPool.length * SETTINGS.weeklyReviewRatio));
+        const count = aPool.length < SETTINGS.weeklyAllThreshold
+            ? aPool.length
+            : Math.max(SETTINGS.weeklyMinGroups, Math.floor(aPool.length * SETTINGS.weeklyReviewRatio));
         const selected = [];
         const tempPool = [...aPool];
 
@@ -1522,24 +1618,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function generateMonthlyTest() {
-        // 强制唤醒：A池全体回炉到总池
-        wordGroups.forEach(g => {
-            if (g.pool === 'a') {
-                const enteredDate = new Date(g.enteredAPoolDate);
-                const today = new Date();
-                const diffDays = (today - enteredDate) / (1000 * 60 * 60 * 24);
+        awakenExpiredAPoolGroups();
 
-                // 如果在 A 池待够了 30 天，或者进行月度总测，全部参与
-                g.pool = 'main';
-                g.tier = 'fuzzy'; // 回炉后标记为模糊档
-            }
-        });
-
-        saveData();
-        updateDashboardUI();
-
-        // 月度总测抽取 50%-70% 的总池
-        const mainPool = wordGroups.filter(g => g.pool === 'main');
+        // 月度总测抽取全部词组的约 60%
+        const mainPool = [...wordGroups];
         const count = Math.floor(mainPool.length * 0.6); // 取 60%
         const selected = [];
         const tempPool = [...mainPool];
@@ -1564,7 +1646,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const confirmed = await openTestActionConfirm('今日轻测', '开始今日轻测？将从总池中加权抽取 30 组词。');
+        const confirmed = await openTestActionConfirm('今日轻测', `开始今日轻测？将从总池中加权抽取 ${SETTINGS.dailyDrawCount} 组词。`);
         if (confirmed) {
             currentTestSnapshot = createCurrentTestSnapshot();
             currentTestGroups = generateDailyTest();
@@ -1591,7 +1673,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const confirmed = await openTestActionConfirm('每周复盘', '开始每周复盘？将从 A 池中随机抽取 20% 词组检测是否退化。');
+        const weeklyMessage = buildRetestConfirmMessage(
+            '每周复盘',
+            '开始每周复盘？将从 A 池中按动态题量抽取词组，检测是否退化。',
+            systemState.lastWeeklyReviewDate,
+            SETTINGS.weeklyMinIntervalDays
+        );
+        const confirmed = await openTestActionConfirm('每周复盘', weeklyMessage);
         if (confirmed) {
             currentTestSnapshot = createCurrentTestSnapshot();
             currentTestGroups = generateWeeklyReview();
@@ -1618,7 +1706,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const confirmed = await openTestActionConfirm('月度总测', '确定开始月度总测吗？A 池会回炉唤醒，并从总池抽取约 60% 词组进行筛查。');
+        const monthlyMessage = buildRetestConfirmMessage(
+            '月度总测',
+            '确定开始月度总测吗？将从全部词组中抽取约 60% 进行筛查，并按成绩分层处理 A 池状态。',
+            systemState.lastMonthlyTestDate,
+            SETTINGS.monthlyMinIntervalDays
+        );
+        const confirmed = await openTestActionConfirm('月度总测', monthlyMessage);
         if (confirmed) {
             currentTestSnapshot = createCurrentTestSnapshot();
             currentTestGroups = generateMonthlyTest();
@@ -1730,9 +1824,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const COMPATIBILITY_CHAR_MAP = {
+        '⺠': '民', '⻓': '长', '⻋': '车', '⻅': '见', '⻉': '贝', '⻔': '门',
+        '⻆': '角', '⻛': '风', '⻝': '食', '⻢': '马', '⻜': '飞', '⻩': '黄',
+        '⻥': '鱼', '⻦': '鸟', '⻬': '齐', '⻤': '鬼', '⻚': '页', '⻣': '骨',
+        '⻘': '青', '⻰': '龙', '⻮': '齿', '⺓': '纟', '⻨': '麦'
+    };
+
     function normalizeAnswerString(str) {
         if (!str) return '';
-        return str.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '');
+        return [...str.normalize('NFKC')]
+            .map(char => COMPATIBILITY_CHAR_MAP[char] || char)
+            .join('')
+            .replace(/[^\u4e00-\u9fffa-zA-Z0-9]/g, '');
     }
 
     function expandNearSynonymVariants(str, options = {}) {
@@ -1934,9 +2038,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     groupObj.pool = 'main';
                     groupObj.tier = 'weak';
                     groupObj.enteredAPoolDate = null;
-                } else if (currentRate >= SETTINGS.graduationThreshold) {
+                } else if (currentRate < SETTINGS.graduationThreshold) {
+                    groupObj.pool = 'main';
+                    groupObj.tier = 'fuzzy';
+                    groupObj.enteredAPoolDate = null;
+                } else {
                     groupObj.pool = 'a';
-                    groupObj.enteredAPoolDate = new Date().toISOString();
+                    if (!groupObj.enteredAPoolDate) {
+                        groupObj.enteredAPoolDate = new Date().toISOString();
+                    }
                 }
             }
         });
@@ -2362,92 +2472,94 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    syncMaimemoBtn.addEventListener('click', async () => {
-        if (!maimemoConfig.token) {
-            alert('请先在设置中填入墨墨 API Token！');
-            settingsModal.classList.add('open');
-            return;
-        }
-
-        const confirmed = await openTestActionConfirm(
-            '墨墨API',
-            '确定开始同步墨墨弱点吗？系统会读取你在墨墨中的薄弱单词，并提高本地对应词组的抽取权重。'
-        );
-
-        if (!confirmed) {
-            return;
-        }
-
-        syncMaimemoBtn.disabled = true;
-        syncMaimemoBtn.innerHTML = '<span class="leaderboard-btn-icon">🔄</span><span>同步中...</span>';
-
-        try {
-            const localWords = [...new Set(
-                wordGroups.flatMap(group => group.words.map(word => word.word.toLowerCase()))
-            )];
-
-            const response = await fetchWithProxy(
-                'https://open.maimemo.com/open/api/v1/study/query_study_records',
-                maimemoConfig.token,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: {
-                        spellings: localWords,
-                        limit: Math.min(localWords.length, 1000)
-                    }
-                }
-            );
-            const data = await response.json();
-
-            if (data.error) throw new Error(data.error);
-
-            const studyRecords = data?.data?.records || [];
-            maimemoWordStatusMap = studyRecords.reduce((statusMap, item) => {
-                const spelling = item?.voc_spelling?.toLowerCase();
-                const status = item?.last_response;
-                if (spelling && status) {
-                    statusMap[spelling] = status;
-                }
-                return statusMap;
-            }, {});
-
-            // 找出本地受影响的词组数量
-            const affectedGroups = wordGroups.filter(g =>
-                g.words.some(w => maimemoWordStatusMap[w.word.toLowerCase()])
-            );
-
-            const statusCounts = studyRecords.reduce((counts, item) => {
-                const status = item?.last_response;
-                if (status) {
-                    counts[status] = (counts[status] || 0) + 1;
-                }
-                return counts;
-            }, {});
-            const summaryText = Object.entries(statusCounts)
-                .filter(([, count]) => count > 0)
-                .map(([status, count]) => `${status} ${count} 个`)
-                .join('，');
-
-            saveData();
-            alert(`同步成功！已读取墨墨学习状态 ${studyRecords.length} 个，并映射本地词组 ${affectedGroups.length} 组。${summaryText ? `\n\n状态分布：${summaryText}` : ''}`);
-        } catch (err) {
-            console.error('墨墨同步失败:', err);
-            let errorMsg = '同步失败：' + (err.message || '网络连接异常');
-
-            if (err.message.includes('代理函数未部署') || err.message.includes('404')) {
-                errorMsg = '❌ 同步失败：Supabase 代理函数未部署。\n\n解决办法：\n1. 请查看根目录下的 supabase_edge_function.md 文件。\n2. 按照步骤使用 Supabase CLI 部署 maimemo-proxy 函数。\n3. 部署后即可解决跨域拦截问题。';
-            } else if (err.message.toLowerCase().includes('fetch') || err.message.includes('拦截')) {
-                errorMsg += '\n\n提示：请求被浏览器拦截。请确保你没有直接打开 HTML 文件，而是通过本地服务器（如 Live Server）运行。';
+    if (syncMaimemoBtn) {
+        syncMaimemoBtn.addEventListener('click', async () => {
+            if (!maimemoConfig.token) {
+                alert('请先在设置中填入墨墨 API Token！');
+                settingsModal.classList.add('open');
+                return;
             }
-            alert(errorMsg);
-        } finally {
-            syncMaimemoBtn.disabled = false;
-            syncMaimemoBtn.innerHTML = '<span class="leaderboard-btn-icon">🔄</span><span>墨墨API</span>';
-        }
-    });
+
+            const confirmed = await openTestActionConfirm(
+                '墨墨API',
+                '确定开始同步墨墨弱点吗？系统会读取你在墨墨中的薄弱单词，并提高本地对应词组的抽取权重。'
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            syncMaimemoBtn.disabled = true;
+            syncMaimemoBtn.innerHTML = '<span class="leaderboard-btn-icon">🔄</span><span>同步中...</span>';
+
+            try {
+                const localWords = [...new Set(
+                    wordGroups.flatMap(group => group.words.map(word => word.word.toLowerCase()))
+                )];
+
+                const response = await fetchWithProxy(
+                    'https://open.maimemo.com/open/api/v1/study/query_study_records',
+                    maimemoConfig.token,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: {
+                            spellings: localWords,
+                            limit: Math.min(localWords.length, 1000)
+                        }
+                    }
+                );
+                const data = await response.json();
+
+                if (data.error) throw new Error(data.error);
+
+                const studyRecords = data?.data?.records || [];
+                maimemoWordStatusMap = studyRecords.reduce((statusMap, item) => {
+                    const spelling = item?.voc_spelling?.toLowerCase();
+                    const status = item?.last_response;
+                    if (spelling && status) {
+                        statusMap[spelling] = status;
+                    }
+                    return statusMap;
+                }, {});
+
+                // 找出本地受影响的词组数量
+                const affectedGroups = wordGroups.filter(g =>
+                    g.words.some(w => maimemoWordStatusMap[w.word.toLowerCase()])
+                );
+
+                const statusCounts = studyRecords.reduce((counts, item) => {
+                    const status = item?.last_response;
+                    if (status) {
+                        counts[status] = (counts[status] || 0) + 1;
+                    }
+                    return counts;
+                }, {});
+                const summaryText = Object.entries(statusCounts)
+                    .filter(([, count]) => count > 0)
+                    .map(([status, count]) => `${status} ${count} 个`)
+                    .join('，');
+
+                saveData();
+                alert(`同步成功！已读取墨墨学习状态 ${studyRecords.length} 个，并映射本地词组 ${affectedGroups.length} 组。${summaryText ? `\n\n状态分布：${summaryText}` : ''}`);
+            } catch (err) {
+                console.error('墨墨同步失败:', err);
+                let errorMsg = '同步失败：' + (err.message || '网络连接异常');
+
+                if (err.message.includes('代理函数未部署') || err.message.includes('404')) {
+                    errorMsg = '❌ 同步失败：Supabase 代理函数未部署。\n\n解决办法：\n1. 请查看根目录下的 supabase_edge_function.md 文件。\n2. 按照步骤使用 Supabase CLI 部署 maimemo-proxy 函数。\n3. 部署后即可解决跨域拦截问题。';
+                } else if (err.message.toLowerCase().includes('fetch') || err.message.includes('拦截')) {
+                    errorMsg += '\n\n提示：请求被浏览器拦截。请确保你没有直接打开 HTML 文件，而是通过本地服务器（如 Live Server）运行。';
+                }
+                alert(errorMsg);
+            } finally {
+                syncMaimemoBtn.disabled = false;
+                syncMaimemoBtn.innerHTML = '<span class="leaderboard-btn-icon">🔄</span><span>墨墨API</span>';
+            }
+        });
+    }
 
     // ==== 排行榜逻辑 (Supabase 驱动) ====
     async function uploadScoreToSupabase(total, correct, accuracy, mode) {
@@ -2477,11 +2589,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function fetchLeaderboard() {
+    function getLeaderboardMeta(mode) {
+        const modeMap = {
+            daily: {
+                title: '🏆 每日排行（前10名）',
+                emptyText: '暂无每日排行数据，快去完成每日轻测吧！'
+            },
+            monthly: {
+                title: '📅 每月排行（前10名）',
+                emptyText: '暂无每月排行数据，快去完成月度总测吧！'
+            }
+        };
+
+        return modeMap[mode] || modeMap.daily;
+    }
+
+    async function fetchLeaderboard(mode) {
         if (!supabase) {
             alert('Supabase 连接未建立。请确保网络正常且已正确配置 API Key。');
             leaderboardModal.classList.remove('open');
             return;
+        }
+
+        const leaderboardMeta = getLeaderboardMeta(mode);
+        if (leaderboardModalTitle) {
+            leaderboardModalTitle.textContent = leaderboardMeta.title;
         }
 
         leaderboardLoading.style.display = 'block';
@@ -2492,6 +2624,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const { data, error } = await supabase
                 .from('leaderboard')
                 .select('*')
+                .eq('test_mode', mode)
                 .order('accuracy', { ascending: false })
                 .limit(10);
 
@@ -2516,7 +2649,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     leaderboardTbody.appendChild(tr);
                 });
             } else {
-                leaderboardTbody.innerHTML = '<tr><td colspan="4">暂无数据，快去测试吧！</td></tr>';
+                leaderboardTbody.innerHTML = `<tr><td colspan="4">${leaderboardMeta.emptyText}</td></tr>`;
             }
 
             leaderboardLoading.style.display = 'none';
@@ -2529,11 +2662,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    viewLeaderboardBtn.addEventListener('click', () => {
-        console.log('排行榜按钮被点击');
+    function openLeaderboard(mode) {
         leaderboardModal.classList.add('open');
-        fetchLeaderboard();
-    });
+        fetchLeaderboard(mode);
+    }
+
+    if (viewDailyLeaderboardBtn) {
+        viewDailyLeaderboardBtn.addEventListener('click', () => {
+            openLeaderboard('daily');
+        });
+    }
+
+    if (viewMonthlyLeaderboardBtn) {
+        viewMonthlyLeaderboardBtn.addEventListener('click', () => {
+            openLeaderboard('monthly');
+        });
+    }
 
     closeLeaderboardBtn.addEventListener('click', () => {
         leaderboardModal.classList.remove('open');

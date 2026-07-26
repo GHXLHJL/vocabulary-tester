@@ -5,6 +5,12 @@ const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
 const RAW_DICT_PATH = path.join(PROJECT_ROOT, 'kaoyan_dict_raw.json');
 const SOURCE_PATH = path.join(PROJECT_ROOT, '墨墨单词本6755_单词表.md');
 const REPORT_PATH = path.join(PROJECT_ROOT, 'cache', 'momo_wordlist_import_report.json');
+const COMPATIBILITY_CHAR_MAP = {
+    '⺠': '民', '⻓': '长', '⻋': '车', '⻅': '见', '⻉': '贝', '⻔': '门',
+    '⻆': '角', '⻛': '风', '⻝': '食', '⻢': '马', '⻜': '飞', '⻩': '黄',
+    '⻥': '鱼', '⻦': '鸟', '⻬': '齐', '⻤': '鬼', '⻚': '页', '⻣': '骨',
+    '⻘': '青', '⻰': '龙', '⻮': '齿', '⺓': '纟', '⻨': '麦'
+};
 
 function parseArgs(argv) {
     const options = {
@@ -53,6 +59,23 @@ function parseMarkdownEntries(markdownText) {
     return entries;
 }
 
+function normalizeImportedMeaning(text) {
+    return [...(text || '').normalize('NFKC')]
+        .map(char => COMPATIBILITY_CHAR_MAP[char] || char)
+        .join('')
+        .replace(/([^\d])\d+$/u, '$1')
+        .trim();
+}
+
+function splitImportedMeanings(text) {
+    return [...new Set(
+        normalizeImportedMeaning(text)
+            .split(/[;；]+/)
+            .map(item => item.trim())
+            .filter(Boolean)
+    )];
+}
+
 function main() {
     const { targetCount, importAllMissing } = parseArgs(process.argv.slice(2));
     const rawDict = JSON.parse(fs.readFileSync(RAW_DICT_PATH, 'utf8'));
@@ -80,7 +103,7 @@ function main() {
 
     selectedEntries.forEach(entry => {
         rawDict[entry.word] = {
-            translations: [entry.meaning],
+            translations: splitImportedMeanings(entry.meaning),
             synonyms: []
         };
     });
