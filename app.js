@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
         kaoyanDictState.status = 'loading';
         updateKaoyanDictStatusUI();
         try {
-            const response = await fetch('kaoyan_dict.json');
+            const response = await fetch(`kaoyan_dict.json?v=${APP_VERSION}`);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.36';
+    const APP_VERSION = 'v26.7.47';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -152,14 +152,71 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const GLOBAL_SYN_DICT = [
         ['方法', '办法', '方式', '手段', '途径'],
-        ['聪明', '机灵', '巧妙', '灵巧'],
-        ['聪明的', '机灵的', '巧妙的', '灵巧的'],
-        ['水平', '水准', '程度', '等级'],
+        ['聪明', '机灵'],
+        ['聪明的', '机灵的'],
+        ['水平', '水准'],
         ['员工', '职工', '职员', '工作人员', '雇员'],
         ['看见', '看到', '瞧见', '目睹'],
         ['逃避', '躲开', '规避'],
         ['不可避免', '不可避免的', '无法避免', '无法避免的'],
-        ['必然发生', '必然发生的', '必然', '必然的']
+        ['必然发生', '必然发生的', '必然', '必然的'],
+        ['表明', '说明', '显示'],
+        ['导致', '引起', '造成'],
+        ['包括', '包含', '涵盖'],
+        ['保持', '维持'],
+        ['提高', '提升'],
+        ['帮助', '协助'],
+        ['获得', '得到', '取得'],
+        ['选择', '挑选'],
+        ['相似', '类似'],
+        ['明显', '显著'],
+        ['合适', '适当'],
+        ['证明', '证实'],
+        ['强调', '着重'],
+        ['遵守', '遵循'],
+        ['参加', '参与'],
+        ['目标', '目的'],
+        ['优点', '长处'],
+        ['缺点', '短处'],
+        ['机会', '机遇'],
+        ['看法', '观点'],
+        ['迅速', '快速'],
+        ['困难', '艰难'],
+        ['准确', '精确'],
+        ['重要', '关键'],
+        ['依靠', '依赖'],
+        ['发现', '发觉'],
+        ['使用', '运用'],
+        ['提供', '给予'],
+        ['改善', '改进'],
+        ['减少', '缩减'],
+        ['反映', '体现'],
+        ['理解', '明白'],
+        ['本质', '实质'],
+        ['区别', '差别'],
+        ['错误', '失误'],
+        ['建立', '设立'],
+        ['允许', '准许', '许可'],
+        ['拒绝', '回绝'],
+        ['担心', '忧虑'],
+        ['展示', '展现'],
+        ['扩大', '扩展'],
+        ['缩小', '减小'],
+        ['结束', '终止'],
+        ['继续', '持续'],
+        ['适合', '适宜'],
+        ['必要', '必需'],
+        ['回答', '答复'],
+        ['立即', '立刻'],
+        ['经常', '常常'],
+        ['一致', '相同'],
+        ['全部', '所有'],
+        ['准备', '预备'],
+        ['改变', '转变'],
+        ['构成', '组成'],
+        ['建造', '修建'],
+        ['破坏', '毁坏'],
+        ['收集', '搜集']
     ];
     const GLOBAL_SYN_DICT_MAP = GLOBAL_SYN_DICT.reduce((accumulator, group) => {
         group.forEach(item => {
@@ -510,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 63, word: 'whip', expectedAnswer: '党鞭/鞭子', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 64, word: 'ventilate', expectedAnswer: '使通风', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 64, word: 'versatile', expectedAnswer: '多才多艺的', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 64, word: 'volatile', expectedAnswer: '易发挥的/易变的', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 64, word: 'volatile', expectedAnswer: '易挥发的/易变的', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 65, word: 'gratitude', expectedAnswer: '感谢', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 65, word: 'attitude', expectedAnswer: '态度', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 65, word: 'altitude', expectedAnswer: '高度', userAnswer: '', isCorrect: null },
@@ -1749,16 +1806,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function getKaoyanDictEntry(wordKey) {
         const rawEntry = kaoyanDict?.[wordKey];
         if (!rawEntry) {
-            return { translations: [], synonyms: [] };
+            return { translations: [], synonyms: [], collocations: [] };
         }
 
         if (Array.isArray(rawEntry)) {
-            return { translations: rawEntry, synonyms: [] };
+            return { translations: rawEntry, synonyms: [], collocations: [] };
         }
 
         return {
             translations: Array.isArray(rawEntry.translations) ? rawEntry.translations : [],
-            synonyms: Array.isArray(rawEntry.synonyms) ? rawEntry.synonyms : []
+            synonyms: Array.isArray(rawEntry.synonyms) ? rawEntry.synonyms : [],
+            collocations: Array.isArray(rawEntry.collocations) ? rawEntry.collocations : []
         };
     }
 

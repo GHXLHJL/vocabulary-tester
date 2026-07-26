@@ -1,0 +1,37 @@
+# Phase 3 进度日志
+
+## 2026-07-26
+- 已确认可以从 Phase 2 进入 Phase 3。
+- 已读取 `planning-with-files` 技能说明。
+- 已尝试按技能说明运行 `session-catchup.py` 与读取模板，但发现当前环境缺少对应脚本和模板目录。
+- 已检查当前技能目录与 git diff 状态。
+- 已新建 `task_plan.md`、`findings.md`、`progress.md`，作为本阶段的持久化工作区。
+- 已读取 `report.txt`，确认当前正式词库规模为 5047 词。
+- 已在仓库中发现潜在线索 `.trae/specs/vocabulary-tester/相似单词集.txt`，准备继续确认其可用性。
+- 已确认 `相似单词集.txt` 实际存在于 `.trae/specs/vocabulary-tester/`。
+- 已检查相关辅助脚本，判断该 txt 更适合作为内部对比词表，而不是直接替换离线词库。
+- 已统计 `相似单词集.txt` 为 621 词。
+- 已完成与 `kaoyan_dict_raw.json` 的首轮差集比较，发现 120 个缺失词，可进入小规模补词试点。
+- 已筛出首批适合补入 `kaoyan_dict_raw.json` 的试点单词候选 10 个。
+- 已将首批 10 个试点词补入 `kaoyan_dict_raw.json`。
+- 已重跑 `scripts/clean_kaoyan_dict.js`，正式词库变为 5057 词，异常报告仍为 0。
+- 已同步更新 `APP_VERSION` 到 `v26.7.45`，并更新前端脚本缓存版本。
+- 已复核 10 个试点词在 `kaoyan_dict.json` 中存在，且内部词表剩余缺失数降到 110。
+- 已顺手修正 `app.js` 中 `volatile` 的首层标准答案笔误，使第一层与第二层释义保持一致。
+- 已根据用户纠偏，将 Phase 3 主目标切换为“补到 6000+”。
+- 已确认外部主来源采用 `KyleBing/english-vocabulary` 的考研词表。
+- 已实测 KyleBing 考研词表为 9602 行 / 5047 唯一词头，与当前 raw 基本同源，无法继续补到 6000+。
+- 已开始切换到新候选源 `engword5500.txt` 进行验证。
+- 用户已确认 [墨墨单词本6755_单词表.md](file:///e:/project/trae/study/%E5%A2%A8%E5%A2%A8%E5%8D%95%E8%AF%8D%E6%9C%AC6755_%E5%8D%95%E8%AF%8D%E8%A1%A8.md) 为准确单词表，扩库主来源切换为该 Markdown 词表。
+- 已新增 [import_momo_wordlist.js](file:///e:/project/trae/study/scripts/node/import_momo_wordlist.js)，用于从墨墨词表按目标数量自动补入 `kaoyan_dict_raw.json`。
+- 已完成墨墨词表与 raw 词库差集统计：raw 为 `5057` 词，Markdown 可识别唯一词头 `6748` 个，缺失 `1821` 个。
+- 已按 `--target 6007` 导入首批 `950` 个缺失词，raw 词库已升至 `6007` 词。
+- 已重跑 `scripts/clean_kaoyan_dict.js`，正式词库达到 `6007` 词，异常报告仍为 `0`。
+- 已验证新增样例词 `you`、`the`、`have`、`want`、`good`、`think` 可在 `kaoyan_dict.json` 中正常读取。
+- 已同步更新 `APP_VERSION` 到 `v26.7.46`，并更新前端脚本缓存版本。
+- 已按用户要求继续一次性补完墨墨词表剩余缺失词。
+- 已为 [import_momo_wordlist.js](file:///e:/project/trae/study/scripts/node/import_momo_wordlist.js) 新增 `--all-missing` 参数，并成功导入剩余 `871` 个缺失词。
+- raw 词库现为 `6878` 词；重跑清洗后，正式词库也稳定为 `6878` 词。
+- 已再次验证 `report.txt`、`exception_report.txt` 和 `validate_global_synonyms.js` 结果，当前异常报告为 `0`，同义词校验全部通过。
+- 已抽查新增样例词 `logo`、`afloat`、`composure`、`marketplace`、`visualize`、`whereby`，均可在 `kaoyan_dict.json` 正常读取。
+- 已同步更新 `APP_VERSION` 到 `v26.7.47`，并更新前端脚本缓存版本。
