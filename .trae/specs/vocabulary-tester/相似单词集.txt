@@ -229,7 +229,7 @@ dessert 甜点
 
 cherish 珍爱/怀念
 perish 死亡
-nourish 滋养
+nourish 滋养/养育
 
 perspective 观点/视角
 prospective 可能的/潜在的
@@ -285,7 +285,7 @@ allege 声称
 allegation 指控 
 allegiance 忠诚
 alien  外国的
-align 使一致
+align （使）一致
 alliance 联盟
 ally 盟友
 allay 减轻
@@ -294,7 +294,7 @@ alley 小巷
 rally 集合
 
 alleviate 缓解
-alienate 使疏远
+alienate （使）疏远
 affiliate 隶属于
 allocate 分配
 
@@ -335,7 +335,7 @@ lump 把…混为一谈/肿块
 
 bravery 勇敢
 gravity 重力
-brevity 简洁
+brevity 简洁/短暂
 
 fate 命运
 fade 逐渐消失/褪色
@@ -346,14 +346,14 @@ fake 假的/赝品
 fare 车费/船费
 fear 害怕/惧怕
 
-scare 害怕
-scarce 缺乏的
-score 分数
-scorn 蔑视
+scare 害怕/恐慌
+scarce 缺乏的/不足的
+score 分数/得分
+scorn 蔑视/鄙视
 corn 玉米
 ore 矿
 sore 痛处
-core 核（心）
+core 核（心）（的）
 scar 伤痕
 
 stationary 静止的
@@ -364,7 +364,7 @@ confuse 迷惑
 effuse 流出
 refuse 拒绝
 refute 反驳
-defuse 使缓和
+defuse （使）缓和
 infuse 注入
 diffuse 传播（的）
 transfuse 输（血）
@@ -374,8 +374,8 @@ text 文本/短信
 taste 喜好/品味
 task 任务/工作
 
-elect 选举
-erect 建立
+elect 选举/选择
+erect 建立/直立的
 enact 制定法律/实施
 
 cardinal 最重要的
@@ -387,14 +387,14 @@ export 出口（物）
 exert 运用/努力
 except 除…之外
 excerpt 摘录
-expend 花钱
-expand 扩大
+expend 花费/消耗
+expand 扩大/详述
 extend 延长/包括
-extent 程度
-expire 过期
-expose 暴露
+extent 程度/范围
+expire 过期/终止
+expose 暴露/（使）遭受
 
-week 星期
+week 星期/周
 weed 杂草
 weep 流出/哭泣
 sweep 扫过/迅速传播
@@ -416,11 +416,11 @@ aptitude 天赋/天资
 multitude 大量/人群
 
 talent  才能/天才
-latent  潜伏的
+latent  潜伏的/潜在的
 patent  专利/专利权
 tenant  租户/佃户
 lantern  灯笼
-lateral  侧面的
+lateral  侧面的/平级的
 
 vote 投票/表决
 veto 否决/反对
@@ -491,27 +491,29 @@ curriculum 课程
 circumstance 情况/命运
 
 recent 最近的
-resent 愤恨
-consent 同意
+resent 愤恨/讨厌
+consent 同意/准许
 context 背景/语境
 contest 比赛/争辩
-contend 声称
+contend 声称/竞争
 content 内容/满意的
+contact 联系/触摸
 
 operate 经营/运转
-cooperate 合作
-corporate 公司的
+cooperate 合作/协作
+corporate 公司的/全体的
 incorporate 包括
 coordinate （使）协调
 
-protest 抗议
+protect 保护/保卫
+protest 抗议/反对
 pretext 借口
 process 过程/处理
 progress 进步/进展
 congress 国会/代表大会
 
 deform （使）畸形
-perform 表现
+perform 表现/履行/表演
 uniform 制服/统一的
 conform 遵守/相一致
 inform 通知/影响
@@ -597,12 +599,12 @@ approach 接近/方法
 approval 赞成/批准
 appear 出现/看起来
 
-inflict （使）遭受
-conflict 冲突
+inflict （使）遭受/强加
+conflict 冲突/矛盾
 
-delicate 精美的
-dedicate 献身于
-indicate 表明
+delicate 精美的/微妙的
+dedicate 奉献/献身（于）
+indicate 表明/暗示
 
 distinguish 区分/辨别
 distinguished 卓著的/杰出的
@@ -661,6 +663,7 @@ stipulate 规定/约定
 spectrum 光谱/范围
 spectacle 景象/眼镜
 spectacular 壮观的
+spectator 观众/旁观者
 speculative 猜测的
 
 repeal 废止/废除
@@ -673,37 +676,39 @@ propel 推动/促使
 expel 开除/驱逐
 excel 擅长/超越
 
-gas 气体
-gasp 喘气
-gape 裂开
-grasp 理解
+gap 缝隙/缺口
+gas 气体/煤气
+gasp 喘气/喘息
+gape 裂开/张开
+grasp 理解/抓住
 grape 葡萄
-gossip 流言
+gossip 流言/闲话
 
-inventive 善于创新的
-incentive 激励
-intensive 密集的
+inventive 善于创新的/有创造力的
+incentive 激励/刺激
+intensive 密集的/加强的
 inclusive 包括的
 
 assure （人）确保/保证
 insure （钱）确保/给…买保险
 ensure （事）确保
 secure （资源）获得/（使）安全（的）
+obscure （使）模糊（的）/难以理解的
 
-equality 平等
-quantity 数量
-quality 质量
+equality 平等/相等
+quantity 数量/大量
+quality 质量/品质/优质（的）
 qualify （使）有资格/取得资格
 
-vigorous 精力旺盛的
-rigorous 严厉的
-humorous 幽默的
-victorious 获胜的
+vigorous 活跃的/精力旺盛的
+rigorous 严厉的/严格的
+humorous 幽默的/滑稽的
+victorious 获胜的/胜利的
 curious 好奇的
-nervous 紧张的
+nervous 紧张的/担忧的
 obvious 明显的
-dubious 怀疑的
-serious 严重的
+dubious 怀疑的/可疑的
+serious 严重的/重要的
 
 district 地区/区
 distribute 分发/（使）分散
@@ -752,6 +757,7 @@ boost 增长/促进
 complement 补足/（使）完美
 compliment 称赞/恭维
 
+trait 特征/特点
 trail 追踪/路线
 trial 审判/试验
 
