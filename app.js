@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.55';
+    const APP_VERSION = 'v26.7.56';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
         weeklyDegradation: 0.7,   // 周复盘退化线
         monthlyMinIntervalDays: 25, // 月度总测建议最小间隔
         monthlyDegradation: 0.6,  // 月度总测退化线
-        awakenDays: 30,          // A池强制唤醒周期
+        awakenDays: 21,          // A池强制唤醒周期
         stuckDays: 7             // 防卡死天数
     };
 
@@ -1602,25 +1602,45 @@ document.addEventListener('DOMContentLoaded', () => {
     function generateDailyTest() {
         awakenExpiredAPoolGroups();
         const today = new Date();
-        const availableGroups = wordGroups.filter(g => {
-            if (g.pool !== 'main') return false;
-            if (!g.lastTestDate) return true;
+        const mainPoolGroups = wordGroups.filter(g => g.pool === 'main');
+        const eligibleGroups = [];
+        const forcedGroups = [];
 
-            const lastDate = new Date(g.lastTestDate);
+        mainPoolGroups.forEach(groupObj => {
+            if (!groupObj.lastTestDate) {
+                eligibleGroups.push(groupObj);
+                return;
+            }
+
+            const lastDate = new Date(groupObj.lastTestDate);
             const diffDays = (today - lastDate) / (1000 * 60 * 60 * 24);
 
-            // 满足最小间隔约束，或者连续 7 天未被抽到强制进入
-            return diffDays >= SETTINGS.minIntervalDays || diffDays >= SETTINGS.stuckDays;
+            if (diffDays >= SETTINGS.stuckDays) {
+                forcedGroups.push({ group: groupObj, diffDays });
+                eligibleGroups.push(groupObj);
+                return;
+            }
+
+            if (diffDays >= SETTINGS.minIntervalDays) {
+                eligibleGroups.push(groupObj);
+            }
         });
 
-        if (availableGroups.length === 0) {
+        if (eligibleGroups.length === 0) {
             alert('总池中没有满足间隔要求的词组，请休息一下或尝试其他模式！');
             return [];
         }
 
-        // 加权抽取
+        const count = Math.min(SETTINGS.dailyDrawCount, eligibleGroups.length);
+        const selected = forcedGroups
+            .sort((a, b) => b.diffDays - a.diffDays)
+            .slice(0, count)
+            .map(item => item.group);
+
+        // 用原有权重逻辑补齐剩余题量
+        const remainingGroups = eligibleGroups.filter(groupObj => !selected.includes(groupObj));
         const weightedPool = [];
-        availableGroups.forEach(g => {
+        remainingGroups.forEach(g => {
             let weight = 1;
 
             // 基础权重判定
@@ -1639,9 +1659,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 随机抽取设定题量
-        const selected = [];
-        const count = Math.min(SETTINGS.dailyDrawCount, availableGroups.length);
+        // 随机补齐剩余题量
         const usedIndices = new Set();
 
         while (selected.length < count && usedIndices.size < weightedPool.length) {
@@ -1708,7 +1726,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const confirmed = await openTestActionConfirm('今日轻测', `开始今日轻测？将从总池中加权抽取 ${SETTINGS.dailyDrawCount} 组词。`);
+        const dailyMessage = buildRetestConfirmMessage(
+            '每日轻测',
+            `开始今日轻测？将从总池中加权抽取 ${SETTINGS.dailyDrawCount} 组词。`,
+            systemState.lastDailyTestDate,
+            1
+        );
+        const confirmed = await openTestActionConfirm('今日轻测', dailyMessage);
         if (confirmed) {
             currentTestSnapshot = createCurrentTestSnapshot();
             currentTestGroups = generateDailyTest();
@@ -2689,7 +2713,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 .eq('test_mode', mode)
                 .order('accuracy', { ascending: false })
                 .limit(10);
-
             if (error) throw error;
 
             if (data && data.length > 0) {
