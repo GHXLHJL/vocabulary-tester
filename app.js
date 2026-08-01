@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.58';
+    const APP_VERSION = 'v26.7.59';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -231,6 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const SETTINGS = {
         dailyDrawCount: 20,      // 每日抽取词组数
         dailyLeaderboardRetentionDays: 5, // 每日排行榜记录有效期
+        dailyLeaderboardMaxSlotsPerUser: 4, // 每日排行榜每人最多占据位次
         minIntervalDays: 2,      // 抽题最小间隔
         graduationThreshold: 0.8, // 毕业正确率阈值 (最近3次平均)
         minSingleRate: 0.6,      // 毕业最低单次线
@@ -2792,13 +2793,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 query = query.gte('test_date', getDailyLeaderboardExpiryCutoffISO());
             }
 
+            const queryLimit = mode === 'daily' ? 100 : 10;
+
             const { data, error } = await query
                 .order('accuracy', { ascending: false })
-                .limit(10);
+                .limit(queryLimit);
             if (error) throw error;
 
-            if (data && data.length > 0) {
-                data.forEach((row, index) => {
+            let rows = Array.isArray(data) ? data : [];
+            if (mode === 'daily') {
+                const userEntryCounts = new Map();
+                rows = rows.filter(row => {
+                    const userKey = row.user_id || row.nickname || row.id;
+                    const currentCount = userEntryCounts.get(userKey) || 0;
+                    if (currentCount >= SETTINGS.dailyLeaderboardMaxSlotsPerUser) {
+                        return false;
+                    }
+
+                    userEntryCounts.set(userKey, currentCount + 1);
+                    return true;
+                });
+            }
+
+            rows = rows.slice(0, 10);
+
+            if (rows.length > 0) {
+                rows.forEach((row, index) => {
                     const tr = document.createElement('tr');
 
                     // 排名逻辑
