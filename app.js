@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.7.56';
+    const APP_VERSION = 'v26.7.58';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -230,6 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 优化方案参数配置
     const SETTINGS = {
         dailyDrawCount: 20,      // 每日抽取词组数
+        dailyLeaderboardRetentionDays: 5, // 每日排行榜记录有效期
         minIntervalDays: 2,      // 抽题最小间隔
         graduationThreshold: 0.8, // 毕业正确率阈值 (最近3次平均)
         minSingleRate: 0.6,      // 毕业最低单次线
@@ -240,7 +241,6 @@ document.addEventListener('DOMContentLoaded', () => {
         weeklyAllThreshold: 15,  // A池较小时全量复盘阈值
         weeklyMinIntervalDays: 7, // 周复盘建议最小间隔
         weeklyDegradation: 0.7,   // 周复盘退化线
-        monthlyMinIntervalDays: 25, // 月度总测建议最小间隔
         monthlyDegradation: 0.6,  // 月度总测退化线
         awakenDays: 21,          // A池强制唤醒周期
         stuckDays: 7             // 防卡死天数
@@ -1380,14 +1380,45 @@ document.addEventListener('DOMContentLoaded', () => {
         return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
     }
 
+    function normalizeDateToStartOfDay(date) {
+        const normalized = new Date(date);
+        normalized.setHours(0, 0, 0, 0);
+        return normalized;
+    }
+
     function getElapsedDaysFromStoredDate(value) {
         const parsedDate = parseStoredDate(value);
         if (!parsedDate) return null;
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        parsedDate.setHours(0, 0, 0, 0);
-        return Math.floor((today - parsedDate) / (1000 * 60 * 60 * 24));
+        const today = normalizeDateToStartOfDay(new Date());
+        const storedDate = normalizeDateToStartOfDay(parsedDate);
+        return Math.floor((today - storedDate) / (1000 * 60 * 60 * 24));
+    }
+
+    function getMonthlyNextAvailableDate(value) {
+        const parsedDate = parseStoredDate(value);
+        if (!parsedDate) return null;
+
+        const lastDate = normalizeDateToStartOfDay(parsedDate);
+        const targetMonth = lastDate.getMonth() + 1;
+        const desiredDay = lastDate.getDate();
+        const maxDayOfTargetMonth = new Date(lastDate.getFullYear(), targetMonth + 1, 0).getDate();
+        return new Date(
+            lastDate.getFullYear(),
+            targetMonth,
+            Math.min(desiredDay, maxDayOfTargetMonth)
+        );
+    }
+
+    function getRemainingDaysUntilDate(targetDate) {
+        if (!targetDate) return null;
+
+        const today = normalizeDateToStartOfDay(new Date());
+        const normalizedTarget = normalizeDateToStartOfDay(targetDate);
+        return Math.max(
+            Math.floor((normalizedTarget - today) / (1000 * 60 * 60 * 24)),
+            0
+        );
     }
 
     function buildRetestConfirmMessage(modeLabel, defaultMessage, lastDate, minIntervalDays) {
@@ -1398,6 +1429,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const remainingDays = Math.max(minIntervalDays - elapsedDays, 0);
         return `${defaultMessage}\n\n距上次${modeLabel}仅 ${elapsedDays} 天，建议至少间隔 ${minIntervalDays} 天；当前还差 ${remainingDays} 天。确定要提前开始吗？`;
+    }
+
+    function buildMonthlyRetestConfirmMessage(defaultMessage, lastDate) {
+        const nextAvailableDate = getMonthlyNextAvailableDate(lastDate);
+        if (!nextAvailableDate) {
+            return defaultMessage;
+        }
+
+        const remainingDays = getRemainingDaysUntilDate(nextAvailableDate);
+        if (remainingDays === 0) {
+            return defaultMessage;
+        }
+
+        return `${defaultMessage}\n\n上次月度总测为 ${lastDate}，按自然月规则建议到 ${nextAvailableDate.toLocaleDateString()} 后再测；当前还差 ${remainingDays} 天。确定要提前开始吗？`;
     }
 
     function awakenExpiredAPoolGroups() {
@@ -1471,15 +1516,16 @@ document.addEventListener('DOMContentLoaded', () => {
             weeklyStatus.textContent = `冷却中，还差 ${SETTINGS.weeklyMinIntervalDays - weeklyElapsedDays} 天`;
         }
 
-        const monthlyElapsedDays = getElapsedDaysFromStoredDate(systemState.lastMonthlyTestDate);
+        const monthlyNextAvailableDate = getMonthlyNextAvailableDate(systemState.lastMonthlyTestDate);
+        const monthlyRemainingDays = getRemainingDaysUntilDate(monthlyNextAvailableDate);
         if (!systemState.lastMonthlyTestDate) {
             monthlyStatus.textContent = '待进行';
-        } else if (monthlyElapsedDays === null) {
+        } else if (!monthlyNextAvailableDate || monthlyRemainingDays === null) {
             monthlyStatus.textContent = `上次:${systemState.lastMonthlyTestDate}`;
-        } else if (monthlyElapsedDays >= SETTINGS.monthlyMinIntervalDays) {
+        } else if (monthlyRemainingDays === 0) {
             monthlyStatus.textContent = `可进行（上次:${systemState.lastMonthlyTestDate}）`;
         } else {
-            monthlyStatus.textContent = `冷却中，还差 ${SETTINGS.monthlyMinIntervalDays - monthlyElapsedDays} 天`;
+            monthlyStatus.textContent = `冷却中，还差 ${monthlyRemainingDays} 天`;
         }
     }
 
@@ -1792,11 +1838,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const monthlyMessage = buildRetestConfirmMessage(
-            '月度总测',
+        const monthlyMessage = buildMonthlyRetestConfirmMessage(
             '确定开始月度总测吗？将从全部词组中抽取约 60% 进行筛查，并按成绩分层处理 A 池状态。',
-            systemState.lastMonthlyTestDate,
-            SETTINGS.monthlyMinIntervalDays
+            systemState.lastMonthlyTestDate
         );
         const confirmed = await openTestActionConfirm('月度总测', monthlyMessage);
         if (confirmed) {
@@ -2648,6 +2692,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==== 排行榜逻辑 (Supabase 驱动) ====
+    function getDailyLeaderboardExpiryCutoffISO() {
+        return new Date(
+            Date.now() - SETTINGS.dailyLeaderboardRetentionDays * 24 * 60 * 60 * 1000
+        ).toISOString();
+    }
+
+    async function pruneExpiredDailyLeaderboardRecords() {
+        if (!supabase) return;
+
+        try {
+            const cutoffISO = getDailyLeaderboardExpiryCutoffISO();
+            const { error } = await supabase
+                .from('leaderboard')
+                .delete()
+                .eq('test_mode', 'daily')
+                .lt('test_date', cutoffISO);
+
+            if (error) throw error;
+        } catch (err) {
+            console.error('清理过期每日排行榜记录失败:', err);
+        }
+    }
+
     async function uploadScoreToSupabase(total, correct, accuracy, mode) {
         if (!supabase) return;
 
@@ -2655,6 +2722,10 @@ document.addEventListener('DOMContentLoaded', () => {
         saveData();
 
         try {
+            if (mode === 'daily') {
+                await pruneExpiredDailyLeaderboardRecords();
+            }
+
             const { error } = await supabase
                 .from('leaderboard')
                 .insert([
@@ -2664,7 +2735,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         total_words: total,
                         correct_words: correct,
                         accuracy: parseFloat(accuracy),
-                        test_mode: mode
+                        test_mode: mode,
+                        test_date: new Date().toISOString()
                     }
                 ]);
 
@@ -2678,8 +2750,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function getLeaderboardMeta(mode) {
         const modeMap = {
             daily: {
-                title: '🏆 每日排行（前10名）',
-                emptyText: '暂无每日排行数据，快去完成每日轻测吧！'
+                title: '🏆 每日排行',
+                emptyText: `暂无近${SETTINGS.dailyLeaderboardRetentionDays}天的每日排行数据，快去完成每日轻测吧！`
             },
             monthly: {
                 title: '📅 每月排行（前10名）',
@@ -2707,10 +2779,20 @@ document.addEventListener('DOMContentLoaded', () => {
         leaderboardTbody.innerHTML = '';
 
         try {
-            const { data, error } = await supabase
+            if (mode === 'daily') {
+                await pruneExpiredDailyLeaderboardRecords();
+            }
+
+            let query = supabase
                 .from('leaderboard')
                 .select('*')
-                .eq('test_mode', mode)
+                .eq('test_mode', mode);
+
+            if (mode === 'daily') {
+                query = query.gte('test_date', getDailyLeaderboardExpiryCutoffISO());
+            }
+
+            const { data, error } = await query
                 .order('accuracy', { ascending: false })
                 .limit(10);
             if (error) throw error;
