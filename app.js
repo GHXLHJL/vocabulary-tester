@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.8.2';
+    const APP_VERSION = 'v26.8.3';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -1004,6 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
     ];
 
     function setBackToTopVisible(isVisible) {
@@ -1572,6 +1573,46 @@ document.addEventListener('DOMContentLoaded', () => {
             group.words = shuffleArray(group.words || []);
         });
         return groups;
+    }
+
+    function syncCurrentTestGroupsBackToWordGroups() {
+        currentTestGroups.forEach(testGroup => {
+            const liveGroup = wordGroups.find(group => group === testGroup)
+                || wordGroups.find(group => getGroupWordSignature(group) === getGroupWordSignature(testGroup))
+                || wordGroups.find(group =>
+                    group.groupId === testGroup.groupId
+                    && getGroupWordListSignature(group) === getGroupWordListSignature(testGroup)
+                );
+
+            if (!liveGroup) {
+                return;
+            }
+
+            liveGroup.pool = testGroup.pool;
+            liveGroup.tier = testGroup.tier;
+            liveGroup.correctRatesHistory = [...(testGroup.correctRatesHistory || [])];
+            liveGroup.consecutiveQualified = testGroup.consecutiveQualified || 0;
+            liveGroup.lastTestDate = testGroup.lastTestDate || null;
+            liveGroup.enteredAPoolDate = testGroup.enteredAPoolDate || null;
+
+            const liveWordsByKey = new Map(
+                (liveGroup.words || []).map(word => [
+                    (word?.word || '').trim().toLowerCase(),
+                    word
+                ])
+            );
+
+            testGroup.words.forEach(testWord => {
+                const liveWord = liveWordsByKey.get((testWord.word || '').trim().toLowerCase());
+                if (!liveWord) {
+                    return;
+                }
+
+                liveWord.userAnswer = testWord.userAnswer || '';
+                liveWord.isCorrect = typeof testWord.isCorrect === 'boolean' ? testWord.isCorrect : null;
+                liveWord.errorCount = testWord.errorCount || 0;
+            });
+        });
     }
 
     // 渲染表格内容
@@ -2219,6 +2260,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (currentTestMode === 'weekly') systemState.lastWeeklyReviewDate = today;
         else if (currentTestMode === 'monthly') systemState.lastMonthlyTestDate = today;
 
+        syncCurrentTestGroupsBackToWordGroups();
         saveData();
 
         if (globalTotalCount > 0) {
@@ -2519,9 +2561,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 newG.consecutiveQualified = 0;
                 wordGroups.push(newG);
             } else {
-                // 检查词数变动
-                const isModified = newG.words.length !== existingG.words.length ||
-                    newG.words.some(nw => !existingG.words.find(ew => ew.word === nw.word));
+                const isModified = getGroupWordSignature(newG) !== getGroupWordSignature(existingG);
 
                 if (isModified) {
                     // 插入或变动逻辑：打回总池，重置进度
@@ -2544,9 +2584,28 @@ document.addEventListener('DOMContentLoaded', () => {
         saveData();
     }
 
-    function getGroupWordSignature(group) {
+    function getWordContentSignature(wordObj) {
+        const wordKey = (wordObj?.word || '').trim().toLowerCase();
+        const answerKey = (wordObj?.expectedAnswer || '')
+            .split('/')
+            .map(item => item.trim())
+            .filter(Boolean)
+            .sort()
+            .join('/');
+        return `${wordKey}::${answerKey}`;
+    }
+
+    function getGroupWordListSignature(group) {
         return (group?.words || [])
             .map(word => (word?.word || '').trim().toLowerCase())
+            .filter(Boolean)
+            .sort()
+            .join('||');
+    }
+
+    function getGroupWordSignature(group) {
+        return (group?.words || [])
+            .map(word => getWordContentSignature(word))
             .filter(Boolean)
             .sort()
             .join('||');
