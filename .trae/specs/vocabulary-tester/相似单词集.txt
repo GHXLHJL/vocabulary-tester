@@ -3,11 +3,24 @@ ascribe 将…归因于/认为…具有
 prescribe 开药/规定
 subscribe 订阅/同意
 describe 描述/形容
+inscribe 题写/（雕）刻
+transcribe 抄写/改编（乐曲）
 
 modify 更改/修改
 commodity 商品/日用品
 accommodate 适应/容纳
 commercial 商业（的）/广告
+
+irritate 激怒/刺激
+irrigate 灌溉/冲洗
+agitate 搅动/煽动
+
+intend 打算/计划
+attend 参加/应对
+extend 延长/包括
+distend 扩大/夸张
+pretend 假装/假扮
+contend 竞争/声称
 
 conscious 意识到的/有意的
 subconscious 下意识（的）
@@ -66,7 +79,7 @@ shortage 短缺/不足
 shortcut 捷径/近路
 undercut 削减/压低
 short 短的/矮的
-shortly 立刻/简短的
+shortly 立刻/简短地
 shorten 缩短
 shortlist 候选名单
 
@@ -87,7 +100,7 @@ button 按钮/纽扣
 hose 水管/软管
 horse 马
 house 房子/大楼/议院
-hoarse 嘶哑的/嘶哑的
+hoarse 沙哑的/嘶哑的
 
 magnificent 宏伟的/壮丽的
 malignant （病）恶性的/恶毒的
@@ -152,6 +165,7 @@ beard 胡子/胡须
 
 rut 刻板乏味/车辙
 nut 螺母/坚果/疯子
+gut 本能（的）/勇气/肚子
 
 needle 针头/激怒
 needy 贫穷的/贫困的
@@ -191,7 +205,7 @@ delete 删除/删去
 deplete 耗尽
 
 volume 容量/一卷
-column 专栏/支柱/列
+column 专栏/（支）柱/列
 
 seem 似乎
 deem 认为
@@ -306,11 +320,11 @@ former 以前的/前者（的）
 formula 方案/配方
 formulate 制定
 
-trip 旅行
+trip 旅行/绊倒
 trap 困住/陷阱
-strap 捆绑
-strip 剥夺
-stripe 条纹
+strap 捆绑/布条
+strip 剥夺/条（带）
+stripe 条纹/种类
 scrip 临时凭证/便条
 script 剧本/计划
 spite 怨恨
@@ -389,7 +403,7 @@ except 除…之外
 excerpt 摘录
 expend 花费/消耗
 expand 扩大/详述
-extend 延长/包括
+
 extent 程度/范围
 expire 过期/终止
 expose 暴露/（使）遭受
@@ -426,7 +440,7 @@ vote 投票/表决
 veto 否决/反对
 
 row 争吵/一排
-raw 未经加工的
+raw 生的/未经加工的
 law 法律/司法界/警方
 paw 爪子
 jaw 下巴
@@ -495,7 +509,6 @@ resent 愤恨/讨厌
 consent 同意/准许
 context 背景/语境
 contest 比赛/争辩
-contend 声称/竞争
 content 内容/满意的
 contact 联系/触摸
 
@@ -754,6 +767,7 @@ roast 烘烤/烤肉
 boast 自夸/拥有
 boost 增长/促进
 
+implement 实施/工具
 complement 补足/（使）完美
 compliment 称赞/恭维
 
@@ -778,8 +792,14 @@ jumble （使）混乱
 rumble 隆隆作响
 tumble 跌倒/暴跌
 stumble 绊倒
+
+amble 缓行/漫步
+ramble 漫步/闲聊
 gamble 赌博/冒险
 shamble 蹒跚
+preamble 序言/开场白
+scramble 争抢/（攀）爬
+
 assemble 集合/组装
 resemble 与…相似
 dissemble 掩饰/假装
