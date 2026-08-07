@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.8.1';
+    const APP_VERSION = 'v26.8.2';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -1003,6 +1003,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
     ];
 
     function setBackToTopVisible(isVisible) {
@@ -1557,6 +1558,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 0);
     }
 
+    function shuffleArray(items) {
+        const shuffled = [...items];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    function shuffleWordsWithinGroups(groups) {
+        groups.forEach(group => {
+            group.words = shuffleArray(group.words || []);
+        });
+        return groups;
+    }
+
     // 渲染表格内容
     function renderTable() {
         wordTbody.innerHTML = '';
@@ -1798,7 +1815,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const confirmed = await openTestActionConfirm('今日轻测', dailyMessage);
         if (confirmed) {
             currentTestSnapshot = createCurrentTestSnapshot();
-            currentTestGroups = generateDailyTest();
+            currentTestGroups = shuffleWordsWithinGroups(generateDailyTest());
             currentTestMode = 'daily';
             if (currentTestGroups.length > 0) {
                 resetCurrentTestAnswers();
@@ -1831,7 +1848,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const confirmed = await openTestActionConfirm('每周复盘', weeklyMessage);
         if (confirmed) {
             currentTestSnapshot = createCurrentTestSnapshot();
-            currentTestGroups = generateWeeklyReview();
+            currentTestGroups = shuffleWordsWithinGroups(generateWeeklyReview());
             currentTestMode = 'weekly';
             if (currentTestGroups.length > 0) {
                 resetCurrentTestAnswers();
@@ -1862,7 +1879,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const confirmed = await openTestActionConfirm('月度总测', monthlyMessage);
         if (confirmed) {
             currentTestSnapshot = createCurrentTestSnapshot();
-            currentTestGroups = generateMonthlyTest();
+            currentTestGroups = shuffleWordsWithinGroups(generateMonthlyTest());
             currentTestMode = 'monthly';
             if (currentTestGroups.length > 0) {
                 resetCurrentTestAnswers();
@@ -2527,39 +2544,107 @@ document.addEventListener('DOMContentLoaded', () => {
         saveData();
     }
 
+    function getGroupWordSignature(group) {
+        return (group?.words || [])
+            .map(word => (word?.word || '').trim().toLowerCase())
+            .filter(Boolean)
+            .sort()
+            .join('||');
+    }
+
+    function cloneGroupStateFromExisting(sourceGroup, existingGroup) {
+        const existingWordsByKey = new Map(
+            (existingGroup?.words || []).map(word => [
+                (word?.word || '').trim().toLowerCase(),
+                word
+            ])
+        );
+
+        return {
+            ...existingGroup,
+            groupId: sourceGroup.groupId,
+            words: sourceGroup.words.map(sourceWord => {
+                const key = (sourceWord.word || '').trim().toLowerCase();
+                const existingWord = existingWordsByKey.get(key);
+                return existingWord ? {
+                    ...sourceWord,
+                    id: existingWord.id || sourceWord.id,
+                    userAnswer: existingWord.userAnswer || '',
+                    isCorrect: typeof existingWord.isCorrect === 'boolean' ? existingWord.isCorrect : null,
+                    errorCount: existingWord.errorCount || 0
+                } : sourceWord;
+            })
+        };
+    }
+
+    function resetGroupFromSource(sourceGroup) {
+        return {
+            ...sourceGroup,
+            pool: 'main',
+            tier: 'new',
+            correctRatesHistory: [],
+            consecutiveQualified: 0,
+            lastTestDate: null,
+            enteredAPoolDate: null
+        };
+    }
+
     // 核心改进：同步代码中的 defaultWords 到当前状态
     function syncWithCodeSource() {
         const sourceGroups = createDefaultWordGroups();
+        const remainingTargets = [...wordGroups];
+        const syncedGroups = [];
         let modified = false;
 
-        sourceGroups.forEach(srcG => {
-            const targetG = wordGroups.find(g => g.groupId === srcG.groupId);
-            if (!targetG) {
-                // 发现全新词组
-                wordGroups.push(srcG);
-                modified = true;
-            } else {
-                // 检查词组内容是否有变动
-                const isWordsChanged = srcG.words.length !== targetG.words.length ||
-                    srcG.words.some(sw => !targetG.words.find(tw => tw.word === sw.word));
+        function takeRemainingGroupBySignature(signature) {
+            if (!signature) return null;
+            const matchIndex = remainingTargets.findIndex(group => getGroupWordSignature(group) === signature);
+            if (matchIndex === -1) return null;
+            return remainingTargets.splice(matchIndex, 1)[0];
+        }
 
-                if (isWordsChanged) {
-                    // 执行 Phase 2 逻辑：打回总池并重置
-                    targetG.words = srcG.words;
-                    targetG.pool = 'main';
-                    targetG.tier = 'new';
-                    targetG.correctRatesHistory = [];
-                    targetG.consecutiveQualified = 0;
-                    targetG.lastTestDate = null;
-                    targetG.enteredAPoolDate = null;
-                    modified = true;
-                }
+        sourceGroups.forEach(srcG => {
+            const sourceSignature = getGroupWordSignature(srcG);
+
+            // 先尝试按 groupId 精准匹配；若组号漂移，再按词组内容迁移已有进度。
+            const sameIdIndex = remainingTargets.findIndex(group => group.groupId === srcG.groupId);
+            const sameIdGroup = sameIdIndex === -1 ? null : remainingTargets[sameIdIndex];
+            const sameIdSignature = sameIdGroup ? getGroupWordSignature(sameIdGroup) : '';
+
+            if (sameIdGroup && sameIdSignature === sourceSignature) {
+                remainingTargets.splice(sameIdIndex, 1);
+                syncedGroups.push(cloneGroupStateFromExisting(srcG, sameIdGroup));
+                return;
             }
+
+            const sameContentGroup = takeRemainingGroupBySignature(sourceSignature);
+            if (sameContentGroup) {
+                syncedGroups.push(cloneGroupStateFromExisting(srcG, sameContentGroup));
+                modified = true;
+                return;
+            }
+
+            if (sameIdGroup) {
+                remainingTargets.splice(sameIdIndex, 1);
+                syncedGroups.push(resetGroupFromSource(srcG));
+                modified = true;
+                return;
+            }
+
+            // 发现全新词组
+            syncedGroups.push(srcG);
+            modified = true;
         });
+
+        if (remainingTargets.length > 0 || syncedGroups.length !== wordGroups.length) {
+            modified = true;
+        }
+
+        wordGroups = syncedGroups;
 
         if (modified) {
             saveData();
-            console.log('检测到代码词库变动，已自动同步并重置相关进度。');
+            console.log('检测到代码词库变动，已按词组内容自动迁移并同步进度。');
         }
     }
 
