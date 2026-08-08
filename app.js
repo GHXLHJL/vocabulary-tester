@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.8.3';
+    const APP_VERSION = 'v26.8.4';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -246,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
         awakenDays: 21,          // A池强制唤醒周期
         stuckDays: 7             // 防卡死天数
     };
+    const DEFAULT_NICKNAME = '考研战士';
 
     let wordGroups = []; // 核心数据：词组池
     let systemState = {
@@ -253,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
         lastWeeklyReviewDate: null,
         lastMonthlyTestDate: null,
         userId: null,
-        nickname: '考研战士'
+        nickname: DEFAULT_NICKNAME
     };
     let maimemoConfig = {
         token: '',
@@ -1005,6 +1006,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
     ];
 
     function setBackToTopVisible(isVisible) {
@@ -1031,7 +1033,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function normalizeNickname(rawNickname) {
         const cleaned = (rawNickname || '').trim();
-        return cleaned || '考研战士';
+        return cleaned || DEFAULT_NICKNAME;
+    }
+
+    function pickPreferredNickname(...candidates) {
+        for (const candidate of candidates) {
+            const trimmed = (candidate || '').trim();
+            if (trimmed && trimmed !== DEFAULT_NICKNAME) {
+                return trimmed;
+            }
+        }
+
+        for (const candidate of candidates) {
+            const trimmed = (candidate || '').trim();
+            if (trimmed) {
+                return trimmed;
+            }
+        }
+
+        return DEFAULT_NICKNAME;
     }
 
     function loadProfileData() {
@@ -1059,6 +1079,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function ensureProfileIntegrity() {
         const storedProfile = loadProfileData();
         const inputNickname = userNicknameInput ? userNicknameInput.value.trim() : '';
+        const previousUserId = systemState.userId;
+        const previousNickname = normalizeNickname(systemState.nickname);
 
         if (!systemState.userId && storedProfile?.userId) {
             systemState.userId = storedProfile.userId;
@@ -1067,11 +1089,11 @@ document.addEventListener('DOMContentLoaded', () => {
             systemState.userId = generateId();
         }
 
-        const effectiveNickname =
-            systemState.nickname ||
-            storedProfile?.nickname ||
-            inputNickname ||
-            '考研战士';
+        const effectiveNickname = pickPreferredNickname(
+            inputNickname,
+            storedProfile?.nickname,
+            systemState.nickname
+        );
 
         systemState.nickname = normalizeNickname(effectiveNickname);
 
@@ -1080,6 +1102,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         saveProfileData();
+
+        return (
+            previousUserId !== systemState.userId ||
+            previousNickname !== systemState.nickname
+        );
     }
 
     function createDefaultWordGroups() {
@@ -1164,16 +1191,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     systemState = {
                         ...systemState,
                         userId: systemState.userId || storedProfile.userId || null,
-                        nickname: systemState.nickname || storedProfile.nickname || systemState.nickname
+                        nickname: pickPreferredNickname(
+                            storedProfile.nickname,
+                            systemState.nickname
+                        )
                     };
                 }
                 maimemoConfig = { ...maimemoConfig, ...(parsed.maimemoConfig || {}) };
                 maimemoWordStatusMap = parsed.maimemoWordStatusMap || {};
+                const storedSystemState = parsed.systemState || {};
 
                 // 核心改进：即使有缓存，也要检查代码中的词库是否有更新
                 syncWithCodeSource();
 
-                ensureProfileIntegrity();
+                const profileRepaired = ensureProfileIntegrity();
+                const shouldPersistProfileRepair =
+                    profileRepaired ||
+                    (storedSystemState.userId || null) !== (systemState.userId || null) ||
+                    normalizeNickname(storedSystemState.nickname) !== systemState.nickname;
+
+                if (shouldPersistProfileRepair) {
+                    saveData();
+                }
                 maimemoTokenInput.value = maimemoConfig.token || '';
                 syncWeaknessToggle.checked = !!maimemoConfig.syncWeakness;
 
@@ -1560,11 +1599,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function shuffleArray(items) {
+        if (!Array.isArray(items) || items.length <= 1) {
+            return Array.isArray(items) ? [...items] : [];
+        }
+
+        const isSameOrder = (left, right) =>
+            left.length === right.length && left.every((item, index) => item === right[index]);
+
         const shuffled = [...items];
         for (let i = shuffled.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
+
+        if (isSameOrder(shuffled, items)) {
+            // 如果本轮随机结果和原顺序完全一致，至少做一次循环位移，避免“看起来没打乱”。
+            shuffled.push(shuffled.shift());
+        }
+
         return shuffled;
     }
 
