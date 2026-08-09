@@ -140,11 +140,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.8.5';
+    const APP_VERSION = 'v26.8.6';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
     const PROFILE_STORAGE_KEY = 'vocabulary_tester_profile_v1';
+    const PRE_SYNC_BACKUP_KEY = 'vocabulary_tester_pre_sync_backup_v1';
     const MAIMEMO_RESPONSE_WEIGHTS = {
         FORGET: 3,
         VAGUE: 2,
@@ -1013,6 +1014,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
     ];
 
     function setBackToTopVisible(isVisible) {
@@ -1271,6 +1273,25 @@ document.addEventListener('DOMContentLoaded', () => {
             systemState.nickname = dataToSave.systemState.nickname;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
             saveProfileData();
+        } catch (error) {
+            warnStorageUnavailable(error);
+        }
+    }
+
+    function backupDataBeforeCodeSync(reason) {
+        try {
+            const backupPayload = {
+                reason,
+                timestamp: new Date().toISOString(),
+                appVersion: APP_VERSION,
+                data: {
+                    wordGroups,
+                    systemState,
+                    maimemoConfig,
+                    maimemoWordStatusMap
+                }
+            };
+            localStorage.setItem(PRE_SYNC_BACKUP_KEY, JSON.stringify(backupPayload));
         } catch (error) {
             warnStorageUnavailable(error);
         }
@@ -2720,8 +2741,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return remainingTargets.splice(matchIndex, 1)[0];
         }
 
+        function takeRemainingGroupByWordListSignature(signature) {
+            if (!signature) return null;
+            const matchIndex = remainingTargets.findIndex(group => getGroupWordListSignature(group) === signature);
+            if (matchIndex === -1) return null;
+            return remainingTargets.splice(matchIndex, 1)[0];
+        }
+
         sourceGroups.forEach(srcG => {
             const sourceSignature = getGroupWordSignature(srcG);
+            const sourceWordListSignature = getGroupWordListSignature(srcG);
 
             // 先尝试按 groupId 精准匹配；若组号漂移，再按词组内容迁移已有进度。
             const sameIdIndex = remainingTargets.findIndex(group => group.groupId === srcG.groupId);
@@ -2741,6 +2770,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            const sameWordListGroup = takeRemainingGroupByWordListSignature(sourceWordListSignature);
+            if (sameWordListGroup) {
+                syncedGroups.push(resetGroupFromSource(srcG));
+                modified = true;
+                return;
+            }
+
             if (sameIdGroup) {
                 remainingTargets.splice(sameIdIndex, 1);
                 syncedGroups.push(resetGroupFromSource(srcG));
@@ -2755,6 +2791,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (remainingTargets.length > 0 || syncedGroups.length !== wordGroups.length) {
             modified = true;
+        }
+
+        if (modified) {
+            backupDataBeforeCodeSync('syncWithCodeSource');
         }
 
         wordGroups = syncedGroups;
