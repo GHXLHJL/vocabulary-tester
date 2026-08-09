@@ -15,6 +15,10 @@ irritate 激怒/刺激
 irrigate 灌溉/冲洗
 agitate 搅动/煽动
 
+devote 投入/献身
+donate 捐赠/捐献
+denote 代表/表示
+
 intend 打算/计划
 attend 参加/应对
 extend 延长/包括
@@ -268,6 +272,7 @@ generalization 概括
 climb攀爬
 climate气候
 climax 高潮/顶点
+
 claim 声称
 acclaim 称赞
 declaim 演讲
@@ -403,7 +408,6 @@ except 除…之外
 excerpt 摘录
 expend 花费/消耗
 expand 扩大/详述
-
 extent 程度/范围
 expire 过期/终止
 expose 暴露/（使）遭受
@@ -419,7 +423,7 @@ whip 党鞭/鞭子
 
 ventilate  （使）通风
 versatile 多才多艺的
-volatile 易发挥的/易变的
+volatile 易挥发的/易变的
 
 gratitude 感谢
 attitude 态度
@@ -600,6 +604,7 @@ literal 字面上的
 literary 文学的
 liberal 开放的
 liberty 自由
+liberate 解放/解脱
 
 property 财产/房地产
 poverty 贫穷
@@ -641,7 +646,7 @@ hamper 阻碍
 
 cape 披风
 cap 帽子
-cope 处理
+cope 处理/应对
 cop 警察
 rap 说唱/敲击
 rape 强奸/抢夺
@@ -664,6 +669,7 @@ efficient 效率高的
 
 evaporate 消失/蒸发
 escalate 扩大/升级
+evacuate 撤退/疏散
 evaluate 评价/评估
 estimate 估计/估算
 eliminate 消除/淘汰
