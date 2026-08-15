@@ -17,7 +17,31 @@ if /i not "!confirm!"=="Y" (
 )
 
 echo.
-echo [1/3] Replacing word list from txt...
+echo [1/4] Validating txt word list...
+python scripts\python\check_vocabulary_txt.py
+if !errorlevel! equ 1 (
+    echo [ERROR] Validation found problems in txt structure, duplicates, or spelling.
+    pause
+    exit /b 1
+) else if !errorlevel! equ 4 (
+    echo.
+    echo [WARN] Structural changes were detected. Please review the summary above carefully.
+    set /p structure_confirm=Type Y to continue with these structural changes:
+    if /i not "!structure_confirm!"=="Y" (
+        echo Cancelled.
+        pause
+        exit /b 0
+    )
+) else if !errorlevel! equ 3 (
+    echo [WARN] Spell check skipped because online dictionary is unavailable. Continuing with structure and duplicate checks only.
+) else if !errorlevel! geq 2 (
+    echo [ERROR] Validator failed.
+    pause
+    exit /b 1
+)
+
+echo.
+echo [2/4] Replacing word list from txt...
 node scripts\node\replace_words_helper.js
 if !errorlevel! neq 0 (
     echo [ERROR] Failed while replacing words.
@@ -26,10 +50,24 @@ if !errorlevel! neq 0 (
 )
 
 echo.
-echo [2/3] Saving changes to git...
+echo [3/4] Saving changes to git...
 git add .
 if !errorlevel! neq 0 (
     echo [ERROR] git add failed.
+    pause
+    exit /b 1
+)
+
+echo.
+git diff --cached --quiet --exit-code
+set "staged_status=!errorlevel!"
+if "!staged_status!"=="0" (
+    echo [INFO] No file changes to commit.
+    pause
+    exit /b 0
+)
+if not "!staged_status!"=="1" (
+    echo [ERROR] Failed to inspect staged changes.
     pause
     exit /b 1
 )
@@ -52,13 +90,13 @@ echo.
 echo Creating commit...
 git commit -m "!commit_msg!"
 if !errorlevel! neq 0 (
-    echo [INFO] No file changes to commit.
+    echo [ERROR] git commit failed.
     pause
-    exit /b 0
+    exit /b 1
 )
 
 echo.
-echo [3/3] Pushing to GitHub...
+echo [4/4] Pushing to GitHub...
 git push
 if !errorlevel! neq 0 (
     echo [ERROR] git push failed.

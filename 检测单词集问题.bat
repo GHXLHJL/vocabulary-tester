@@ -19,7 +19,9 @@ if "%target_file%"=="" (
 )
 
 echo.
-if errorlevel 3 (
+if errorlevel 4 (
+    echo Structure changes were detected. Please review the summary above carefully.
+) else if errorlevel 3 (
     echo Spell check skipped because network or online dictionary is unavailable.
 ) else if errorlevel 2 (
     echo Script failed. Please check the file path.

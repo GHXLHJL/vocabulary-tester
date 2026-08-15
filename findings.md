@@ -95,3 +95,19 @@
 - `debug_momo.log` 与 `page_279.png` 属于前述探索脚本生成的调试产物，可安全删除。
 - [momo_words.json](file:///e:/project/trae/study/momo_words.json) 与 [suspicious_words.json](file:///e:/project/trae/study/suspicious_words.json) 当前无项目引用，且不在正式工作流中，适合删除。
 - `collocation_report.txt` 仍由 [clean_kaoyan_dict.js](file:///e:/project/trae/study/scripts/clean_kaoyan_dict.js) 生成并引用，不应误删。
+
+## 相似词练习链路修复发现
+- 用户当前的 [相似单词集.txt](file:///e:/project/trae/study/.trae/specs/vocabulary-tester/%E7%9B%B8%E4%BC%BC%E5%8D%95%E8%AF%8D%E9%9B%86.txt) 已从“空行分组”切换为“`——` 分组”。
+- 旧版 [replace_words_helper.js](file:///e:/project/trae/study/scripts/node/replace_words_helper.js) 只识别空行，不识别 `——`，会把整份 txt 误解析为 1 个大组；这是更新后分组错乱的根因。
+- 当前故障样例 [app.js](file:///e:/project/trae/study/app.js#L505-L507) 已证实：修复前 `group 55` 只剩 `climax` 一个词，缺失 `climb`、`climate`。
+- 修复后，`parseTxtGroups()` 已同时支持：
+  - 空行分组
+  - `——` 分组
+  - 跳过标题行 `相似单词集`
+- 修复后重跑更新脚本，当前 `txt` 与 `app.js` 的 `144` 个分组已完全一致，`mismatchCount = 0`。
+- 链路级回归脚本 [test_update_chain_regression.js](file:///e:/project/trae/study/scripts/test_update_chain_regression.js) 已覆盖以下场景：
+  - 合并两个词组
+  - 修改两个不同词组中的释义
+  - 给现有词组新增单词
+  - 新增全新词组
+- 回归结果表明：以上场景均只影响发生改动的词组，其余未改动词组的 `pool/tier/enteredAPoolDate/correctRatesHistory` 保持不变，不再整批冲击 A 池。

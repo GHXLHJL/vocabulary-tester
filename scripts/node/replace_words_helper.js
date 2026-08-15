@@ -26,6 +26,11 @@ function getWordListSignature(words) {
         .join('||');
 }
 
+function isGroupSeparatorLine(line) {
+    const trimmedLine = String(line || '').trim();
+    return /^[-—=]{2,}$/u.test(trimmedLine);
+}
+
 function parseExistingGroups(appJsContent) {
     const regexWordsBlock = /const\s+defaultWords\s*=\s*\[\s*\n([\s\S]*?)\s*\];/;
     const blockMatch = appJsContent.match(regexWordsBlock);
@@ -57,13 +62,17 @@ function parseTxtGroups(txtContent) {
     let currentWords = [];
 
     txtContent.split(/\r?\n/).forEach(line => {
-        const trimmedLine = line.trim();
+        const trimmedLine = line.trim().replace(/^\uFEFF/u, '');
 
-        if (trimmedLine === '') {
+        if (trimmedLine === '' || isGroupSeparatorLine(trimmedLine)) {
             if (currentWords.length > 0) {
                 groups.push(currentWords);
                 currentWords = [];
             }
+            return;
+        }
+
+        if (trimmedLine === '相似单词集') {
             return;
         }
 

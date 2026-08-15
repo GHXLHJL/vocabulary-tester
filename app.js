@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.8.6';
+    const APP_VERSION = 'v26.8.8';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -344,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 13, word: 'abundant', expectedAnswer: '大量的/充足的', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 13, word: 'abundance', expectedAnswer: '丰富/充足', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 14, word: 'dissolve', expectedAnswer: '（使）溶解/解散', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 14, word: 'solution', expectedAnswer: '解答/解决办法', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 14, word: 'solution', expectedAnswer: '解答/解决方法', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 14, word: 'soluble', expectedAnswer: '可溶的', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 14, word: 'resolve', expectedAnswer: '决心/解决', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 14, word: 'resolute', expectedAnswer: '坚决的/果断的', userAnswer: '', isCorrect: null },
@@ -356,11 +356,11 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 16, word: 'undercut', expectedAnswer: '削减/压低', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 16, word: 'short', expectedAnswer: '短的/矮的', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 16, word: 'shortly', expectedAnswer: '立刻/简短地', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 16, word: 'shorten', expectedAnswer: '缩短', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 16, word: 'shorten', expectedAnswer: '缩短/变短', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 16, word: 'shortlist', expectedAnswer: '候选名单', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 17, word: 'elusive', expectedAnswer: '难以捉摸的', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 17, word: 'exclusive', expectedAnswer: '独有的/排外的', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 18, word: 'coach', expectedAnswer: '教练', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 18, word: 'coach', expectedAnswer: '教练/训练', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 18, word: 'couch', expectedAnswer: '长沙发/表达', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 18, word: 'cough', expectedAnswer: '咳嗽', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 19, word: 'lever', expectedAnswer: '杠杆/撬动', userAnswer: '', isCorrect: null },
@@ -408,8 +408,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 31, word: 'concession', expectedAnswer: '让步/特许权', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 31, word: 'recession', expectedAnswer: '经济衰退/退后', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 31, word: 'succession', expectedAnswer: '继承（权）/一连串', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 31, word: 'procession', expectedAnswer: '游行/队列', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 31, word: 'possession', expectedAnswer: '拥有/财产', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 31, word: 'procession', expectedAnswer: '队伍/队列', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 31, word: 'possession', expectedAnswer: '拥有（物）/财产', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 32, word: 'ward', expectedAnswer: '病房/防止', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 32, word: 'award', expectedAnswer: '奖品/授予', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 32, word: 'reward', expectedAnswer: '奖赏/酬金', userAnswer: '', isCorrect: null },
@@ -502,6 +502,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 54, word: 'generous', expectedAnswer: '慷慨的', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 54, word: 'genre', expectedAnswer: '类型/种类', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 54, word: 'generalization', expectedAnswer: '概括', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 55, word: 'climb', expectedAnswer: '攀爬', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 55, word: 'climate', expectedAnswer: '气候', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 55, word: 'climax', expectedAnswer: '高潮/顶点', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 56, word: 'claim', expectedAnswer: '声称', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 56, word: 'acclaim', expectedAnswer: '称赞', userAnswer: '', isCorrect: null },
@@ -712,8 +714,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 93, word: 'operate', expectedAnswer: '经营/运转', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 93, word: 'cooperate', expectedAnswer: '合作/协作', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 93, word: 'corporate', expectedAnswer: '公司的/全体的', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 93, word: 'incorporate', expectedAnswer: '包括', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 93, word: 'coordinate', expectedAnswer: '（使）协调', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 93, word: 'incorporate', expectedAnswer: '包括/并入', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 93, word: 'coordinate', expectedAnswer: '（使）协调/坐标（的）', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 94, word: 'protect', expectedAnswer: '保护/保卫', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 94, word: 'protest', expectedAnswer: '抗议/反对', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 94, word: 'pretext', expectedAnswer: '借口', userAnswer: '', isCorrect: null },
@@ -730,7 +732,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 95, word: 'reformer', expectedAnswer: '改革者', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 95, word: 'reformatory', expectedAnswer: '改革的', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 96, word: 'confer', expectedAnswer: '授予/商讨', userAnswer: '', isCorrect: null },
-        { id: generateId(), group: 96, word: 'infer', expectedAnswer: '推断/暗示', userAnswer: '', isCorrect: null },
+        { id: generateId(), group: 96, word: 'infer', expectedAnswer: '推测/暗示', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 96, word: 'refer', expectedAnswer: '涉及/查阅', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 96, word: 'defer', expectedAnswer: '推迟/听从', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 97, word: 'chase', expectedAnswer: '追逐/追求', userAnswer: '', isCorrect: null },
@@ -979,6 +981,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 144, word: 'bid', expectedAnswer: '出价/努力', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 144, word: 'hid(hide)', expectedAnswer: '躲藏', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 144, word: 'rid', expectedAnswer: '摆脱/除去', userAnswer: '', isCorrect: null },
+
+
 
 
 

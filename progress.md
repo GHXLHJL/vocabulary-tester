@@ -54,3 +54,17 @@
 - 已删除 `scripts/node/` 下未被项目引用的 `debug/check/extract/verify` 类探索脚本，以及对应的调试产物 `debug_momo.log`、`page_279.png`。
 - 已删除无项目引用的临时文件 [momo_words.json](file:///e:/project/trae/study/momo_words.json)、[suspicious_words.json](file:///e:/project/trae/study/suspicious_words.json) 和未进入正式流程的 [import_kylebing_kaoyan.js](file:///e:/project/trae/study/scripts/node/import_kylebing_kaoyan.js)。
 - 已保留仍有明确用途或审计价值的文件，如 `collocation_report.txt`、`kaoyan_dict_backup_v1.json`、`cache/` 下的候选词表与导入报告。
+
+## 2026-08-15
+- 已确认用户的 [相似单词集.txt](file:///e:/project/trae/study/.trae/specs/vocabulary-tester/%E7%9B%B8%E4%BC%BC%E5%8D%95%E8%AF%8D%E9%9B%86.txt) 现采用 `——` 作为组分隔符。
+- 已定位每日测试中“模组 55 只有一个单词”的根因：旧版更新脚本仍只按空行切组，导致生成的 `defaultWords` 与源 txt 分组不一致。
+- 已在 [replace_words_helper.js](file:///e:/project/trae/study/scripts/node/replace_words_helper.js) 中补上 `——` 分组支持，并保留空行兼容。
+- 已新增并扩展 [test_update_chain_regression.js](file:///e:/project/trae/study/scripts/test_update_chain_regression.js)，覆盖 txt 解析、改义、合并词组、新增单词、新增词组的回归。
+- 已执行 `node scripts/test_update_chain_regression.js`，通过：
+  - txt 分组数 `144`
+  - 第 55 组解析为 `climb / climate / climax`
+  - 合并/改义场景下仅改动组受影响
+  - 新增单词/新增词组不影响其他旧词组
+- 已重跑 [replace_words_helper.js](file:///e:/project/trae/study/scripts/node/replace_words_helper.js)，重新生成 [app.js](file:///e:/project/trae/study/app.js) 中的 `defaultWords`，并将版本更新至 `v26.8.7`。
+- 已核对 [app.js:L505-L507](file:///e:/project/trae/study/app.js#L505-L507)：`group 55` 现已恢复为 `climb / climate / climax`。
+- 已执行整体验证：当前 `txt` 与 `app.js` 的 `144` 个分组完全一致，`mismatchCount = 0`。

@@ -25,6 +25,11 @@ function getWordListSignature(words) {
         .join('||');
 }
 
+function isGroupSeparatorLine(line) {
+    const trimmedLine = String(line || '').trim();
+    return /^[-—=]{2,}$/u.test(trimmedLine);
+}
+
 function getGroupWordSignature(group) {
     return (group?.words || [])
         .map(word => `${normalizeWord(word.word)}::${normalizeAnswer(word.expectedAnswer)}`)
@@ -57,6 +62,43 @@ function parseExistingGroups(appJsContent) {
     }
 
     return [...groups.values()].sort((a, b) => a.groupId - b.groupId);
+}
+
+function parseTxtGroups(txtContent) {
+    const groups = [];
+    let currentWords = [];
+
+    txtContent.split(/\r?\n/).forEach(line => {
+        const trimmedLine = line.trim();
+
+        if (trimmedLine === '' || isGroupSeparatorLine(trimmedLine)) {
+            if (currentWords.length > 0) {
+                groups.push(currentWords);
+                currentWords = [];
+            }
+            return;
+        }
+
+        if (trimmedLine === '相似单词集') {
+            return;
+        }
+
+        const parts = trimmedLine.split(/\s+/);
+        if (parts.length < 2) {
+            return;
+        }
+
+        currentWords.push({
+            word: parts[0],
+            expectedAnswer: parts.slice(1).join(' ')
+        });
+    });
+
+    if (currentWords.length > 0) {
+        groups.push(currentWords);
+    }
+
+    return groups;
 }
 
 function scoreGroupOverlap(newGroupWords, existingGroupWords) {
@@ -247,8 +289,18 @@ function assert(condition, message, details) {
 
 function main() {
     const appJsContent = fs.readFileSync(appJsPath, 'utf8');
+    const txtContent = fs.readFileSync(path.join(projectRoot, '.trae', 'specs', 'vocabulary-tester', '相似单词集.txt'), 'utf8');
     const existingGroups = parseExistingGroups(appJsContent);
+    const parsedTxtGroups = parseTxtGroups(txtContent);
     assert(existingGroups.length >= 8, '当前词组数量过少，无法执行回归场景');
+    assert(parsedTxtGroups.length >= 8, '当前 txt 分组数量异常', { groupCount: parsedTxtGroups.length });
+
+    const parsedGroup55Words = parsedTxtGroups[54]?.map(item => item.word) || [];
+    assert(
+        JSON.stringify(parsedGroup55Words) === JSON.stringify(['climb', 'climate', 'climax']),
+        'txt 第55组解析结果异常',
+        { group55Words: parsedGroup55Words }
+    );
 
     const mergeAndMeaningScenario = existingGroups.map(group => ({
         groupId: group.groupId,
@@ -371,6 +423,10 @@ function main() {
         });
 
     console.log(JSON.stringify({
+        txtParsingScenario: {
+            parsedGroupCount: parsedTxtGroups.length,
+            group55Words: parsedGroup55Words
+        },
         mergeAndMeaningScenario: {
             totalGroupsBefore: existingGroups.length,
             totalGroupsAfter: mergeMeaningSyncedGroups.length,

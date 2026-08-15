@@ -96,26 +96,221 @@ def load_local_project_words() -> set[str]:
     return words
 
 
-def parse_words(file_path: Path) -> list[dict[str, object]]:
+def normalize_word(word: str) -> str:
+    return word.strip().lower()
+
+
+def normalize_answer(answer: str) -> str:
+    return "/".join(
+        sorted(
+            item.strip()
+            for item in str(answer or "").split("/")
+            if item.strip()
+        )
+    )
+
+
+def get_word_list_signature(words: list[dict[str, object]]) -> str:
+    return "||".join(
+        sorted(
+            normalize_word(str(item["word"]))
+            for item in words
+            if str(item["word"]).strip()
+        )
+    )
+
+
+def get_group_content_signature(words: list[dict[str, object]]) -> str:
+    return "||".join(
+        sorted(
+            f"{normalize_word(str(item['word']))}::{normalize_answer(str(item.get('meaning', '')))}"
+            for item in words
+            if str(item["word"]).strip()
+        )
+    )
+
+
+def is_group_separator_line(line: str) -> bool:
+    return bool(re.fullmatch(r"[-—=]{2,}", line.strip()))
+
+
+def parse_words(file_path: Path) -> tuple[list[dict[str, object]], list[list[dict[str, object]]], list[dict[str, object]]]:
     rows: list[dict[str, object]] = []
+    groups: list[list[dict[str, object]]] = []
+    current_group: list[dict[str, object]] = []
+    structure_issues: list[dict[str, object]] = []
 
     with file_path.open("r", encoding="utf-8") as f:
         for line_no, line in enumerate(f, start=1):
-            stripped = line.strip()
+            stripped = line.strip().lstrip("\ufeff")
             if not stripped:
+                if current_group:
+                    groups.append(current_group)
+                    current_group = []
+                continue
+
+            if stripped == "相似单词集":
+                continue
+
+            if is_group_separator_line(stripped):
+                if not current_group:
+                    structure_issues.append({
+                        "line_no": line_no,
+                        "message": "存在多余或连续的分组分隔符"
+                    })
+                else:
+                    groups.append(current_group)
+                    current_group = []
                 continue
 
             parts = stripped.split()
             if len(parts) < 2:
+                structure_issues.append({
+                    "line_no": line_no,
+                    "message": "该行无法解析为“单词 释义”格式"
+                })
                 continue
 
-            rows.append({
+            entry = {
                 "line_no": line_no,
                 "word": parts[0],
+                "meaning": " ".join(parts[1:]),
                 "raw": stripped,
-            })
+            }
+            rows.append(entry)
+            current_group.append(entry)
 
-    return rows
+    if current_group:
+        groups.append(current_group)
+
+    if not groups:
+        structure_issues.append({
+            "line_no": 0,
+            "message": "未解析出任何有效词组"
+        })
+
+    return rows, groups, structure_issues
+
+
+def load_current_app_groups() -> list[dict[str, object]]:
+    if not LOCAL_APP_JS_FILE.exists():
+        return []
+
+    try:
+        app_js = LOCAL_APP_JS_FILE.read_text(encoding="utf-8")
+    except OSError:
+        return []
+
+    block_match = re.search(r"const\s+defaultWords\s*=\s*\[\s*\n([\s\S]*?)\s*\];", app_js)
+    if not block_match:
+        return []
+
+    groups: dict[int, dict[str, object]] = {}
+    entry_pattern = re.compile(
+        r"group:\s*(\d+),\s*word:\s*['\"]((?:\\['\"]|[^'\"])*)['\"],\s*expectedAnswer:\s*['\"]((?:\\['\"]|[^'\"])*)['\"]"
+    )
+    for match in entry_pattern.finditer(block_match.group(1)):
+        group_id = int(match.group(1))
+        word = match.group(2).replace("\\'", "'").replace('\\"', '"')
+        meaning = match.group(3).replace("\\'", "'").replace('\\"', '"')
+        groups.setdefault(group_id, {"group_id": group_id, "words": []})
+        groups[group_id]["words"].append({
+            "word": word,
+            "meaning": meaning,
+        })
+
+    return [groups[key] for key in sorted(groups.keys())]
+
+
+def score_group_overlap(new_group_words: list[dict[str, object]], existing_group_words: list[dict[str, object]]) -> int:
+    new_set = {normalize_word(str(item["word"])) for item in new_group_words}
+    existing_set = {normalize_word(str(item["word"])) for item in existing_group_words}
+    return sum(1 for word in existing_set if word in new_set)
+
+
+def assign_stable_group_ids(
+    new_groups: list[list[dict[str, object]]],
+    existing_groups: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    remaining_existing_groups = list(existing_groups)
+    assigned_ids = {int(group["group_id"]) for group in existing_groups}
+    next_group_id = (max(assigned_ids) + 1) if assigned_ids else 1
+
+    def take_existing_group(predicate) -> dict[str, object] | None:
+        for index, group in enumerate(remaining_existing_groups):
+            if predicate(group):
+                return remaining_existing_groups.pop(index)
+        return None
+
+    resolved: list[dict[str, object]] = []
+    for words in new_groups:
+        word_signature = get_word_list_signature(words)
+        exact_group = take_existing_group(
+            lambda group: get_word_list_signature(group["words"]) == word_signature
+        )
+        if exact_group:
+            resolved.append({"group_id": int(exact_group["group_id"]), "words": words})
+            continue
+
+        best_index = -1
+        best_overlap = 0
+        for index, group in enumerate(remaining_existing_groups):
+            overlap = score_group_overlap(words, group["words"])
+            if overlap > best_overlap:
+                best_overlap = overlap
+                best_index = index
+                continue
+
+            if overlap == best_overlap and overlap > 0 and best_index != -1:
+                best_group = remaining_existing_groups[best_index]
+                if int(group["group_id"]) < int(best_group["group_id"]):
+                    best_index = index
+
+        if best_index != -1 and best_overlap > 0:
+            matched_group = remaining_existing_groups.pop(best_index)
+            resolved.append({"group_id": int(matched_group["group_id"]), "words": words})
+            continue
+
+        while next_group_id in assigned_ids:
+            next_group_id += 1
+        assigned_ids.add(next_group_id)
+        resolved.append({"group_id": next_group_id, "words": words})
+        next_group_id += 1
+
+    return resolved
+
+
+def summarize_structure_changes(parsed_groups: list[list[dict[str, object]]]) -> dict[str, object]:
+    current_app_groups = load_current_app_groups()
+    if not current_app_groups:
+        return {
+            "current_group_count": 0,
+            "parsed_group_count": len(parsed_groups),
+            "changed_group_ids": [],
+            "added_group_ids": [],
+            "removed_group_ids": [],
+        }
+
+    resolved_groups = assign_stable_group_ids(parsed_groups, current_app_groups)
+    current_by_id = {int(group["group_id"]): group for group in current_app_groups}
+    resolved_by_id = {int(group["group_id"]): group for group in resolved_groups}
+
+    changed_group_ids = sorted(
+        group_id
+        for group_id, group in resolved_by_id.items()
+        if group_id in current_by_id
+        and get_group_content_signature(group["words"]) != get_group_content_signature(current_by_id[group_id]["words"])
+    )
+    added_group_ids = sorted(group_id for group_id in resolved_by_id if group_id not in current_by_id)
+    removed_group_ids = sorted(group_id for group_id in current_by_id if group_id not in resolved_by_id)
+
+    return {
+        "current_group_count": len(current_app_groups),
+        "parsed_group_count": len(parsed_groups),
+        "changed_group_ids": changed_group_ids,
+        "added_group_ids": added_group_ids,
+        "removed_group_ids": removed_group_ids,
+    }
 
 
 def find_duplicates(rows: list[dict[str, object]]) -> dict[str, list[dict[str, object]]]:
@@ -260,6 +455,53 @@ def print_suspicious(suspicious: list[dict[str, object]], dictionary_ready: bool
     print()
 
 
+def print_structure_report(
+    groups: list[list[dict[str, object]]],
+    structure_issues: list[dict[str, object]],
+    structure_summary: dict[str, object],
+) -> None:
+    print("=== 分组结构检测 ===")
+    print(f"解析出的词组数: {len(groups)}")
+
+    if structure_issues:
+        print(f"发现 {len(structure_issues)} 个格式问题：")
+        for item in structure_issues:
+            line_text = f"第 {item['line_no']} 行" if item["line_no"] else "文件级"
+            print(f"- {line_text}: {item['message']}")
+    else:
+        print("未发现明显的分组格式错误。")
+
+    if structure_summary["current_group_count"] > 0:
+        print(
+            "与当前工具词组对比: "
+            f"当前 {structure_summary['current_group_count']} 组 -> "
+            f"解析后 {structure_summary['parsed_group_count']} 组"
+        )
+        print(
+            f"将受影响的旧词组数: {len(structure_summary['changed_group_ids'])}，"
+            f"新增词组数: {len(structure_summary['added_group_ids'])}，"
+            f"移除词组数: {len(structure_summary['removed_group_ids'])}"
+        )
+        if structure_summary["changed_group_ids"]:
+            preview = ", ".join(str(item) for item in structure_summary["changed_group_ids"][:20])
+            print(f"- 受影响旧词组示例: {preview}")
+        if structure_summary["added_group_ids"]:
+            preview = ", ".join(str(item) for item in structure_summary["added_group_ids"][:10])
+            print(f"- 新增词组示例: {preview}")
+        if structure_summary["removed_group_ids"]:
+            preview = ", ".join(str(item) for item in structure_summary["removed_group_ids"][:10])
+            print(f"- 移除词组示例: {preview}")
+    print()
+
+
+def has_structural_impact(structure_summary: dict[str, object]) -> bool:
+    return bool(
+        structure_summary["changed_group_ids"]
+        or structure_summary["added_group_ids"]
+        or structure_summary["removed_group_ids"]
+    )
+
+
 def main() -> int:
     if len(sys.argv) > 1:
         file_path = Path(sys.argv[1]).expanduser().resolve()
@@ -274,12 +516,13 @@ def main() -> int:
         print(f"错误: '{file_path}' 不是一个文件")
         return 2
 
-    rows = parse_words(file_path)
+    rows, groups, structure_issues = parse_words(file_path)
     general_words, general_ready = load_wordlist(GENERAL_WORDLIST_CACHE_FILE, GENERAL_WORDLIST_URL)
     kaoyan_words, kaoyan_ready = load_wordlist(KAOYAN_WORDLIST_CACHE_FILE, KAOYAN_WORDLIST_URL)
     local_project_words = load_local_project_words()
     dictionary_words = general_words | kaoyan_words | local_project_words
     dictionary_ready = bool(dictionary_words) and (general_ready or kaoyan_ready)
+    structure_summary = summarize_structure_changes(groups)
 
     duplicates = find_duplicates(rows)
     suspicious = find_suspicious_spellings(rows, dictionary_words, kaoyan_words) if dictionary_ready else []
@@ -288,11 +531,14 @@ def main() -> int:
     print(f"参与检测的单词数: {len(rows)}")
     print()
 
+    print_structure_report(groups, structure_issues, structure_summary)
     print_duplicates(duplicates)
     print_suspicious(suspicious, dictionary_ready)
 
-    if duplicates or suspicious:
+    if structure_issues or duplicates or suspicious:
         return 1
+    if has_structural_impact(structure_summary):
+        return 4
     if not dictionary_ready:
         return 3
     return 0
