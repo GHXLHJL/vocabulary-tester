@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>小七哥单词自测工具</title>
-    <link rel="stylesheet" href="style.css?v=26.8.8">
+    <link rel="stylesheet" href="style.css?v=26.8.11">
 </head>
 
 <body>
@@ -91,6 +91,27 @@
 
             </div>
 
+            <div id="admin-review-panel" class="admin-review-panel">
+                <div class="admin-review-header">
+                    <div>
+                        <h3>🛡️ 审核管理</h3>
+                        <p class="admin-review-subtitle">在这里处理待审核答案，并同步到全局判题规则。</p>
+                    </div>
+                    <div class="admin-review-actions">
+                        <button id="refresh-review-btn" class="btn-secondary-sm">刷新列表</button>
+                        <button id="exit-review-btn" class="btn-primary-sm">退出管理</button>
+                    </div>
+                </div>
+                <div id="admin-review-status" class="dict-status dict-status-loading" style="display: none;"></div>
+                <div id="admin-review-meta" class="admin-review-meta">待审核 0 条</div>
+                <div class="admin-review-filters">
+                    <button type="button" class="review-filter-btn active" data-status="pending">待审核</button>
+                    <button type="button" class="review-filter-btn" data-status="approved">已通过</button>
+                    <button type="button" class="review-filter-btn" data-status="rejected">已拒绝</button>
+                </div>
+                <div id="admin-review-list" class="admin-review-list"></div>
+            </div>
+
             <div class="tester-header">
                 <div class="action-buttons">
                     <button id="reset-test-btn">重新测试</button>
@@ -107,7 +128,7 @@
                     <div class="summary-item">答对: <strong id="summary-correct" style="color: #28a745;">0</strong></div>
                     <div class="summary-item">答错: <strong id="summary-incorrect" style="color: #dc3545;">0</strong>
                     </div>
-                    <div class="summary-item">准确率: <strong id="summary-accuracy" style="color: #007bff;">0%</strong>
+                    <div class="summary-item">正确率: <strong id="summary-accuracy" style="color: #007bff;">0%</strong>
                     </div>
                 </div>
             </div>
@@ -149,29 +170,31 @@
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>⚙️ 插件设置 (Maimemo API)</h3>
+                <h3>⚙️ 插件设置 (审核入口)</h3>
                 <button id="close-settings-btn" class="close-btn">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="settings-group">
                     <label for="user-nickname">我的昵称 (用于排行榜)</label>
-                    <input type="text" id="user-nickname" placeholder="输入你的昵称..." maxlength="10"
-                        style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                    <div class="input-with-action">
+                        <input type="text" id="user-nickname" placeholder="输入你的昵称..." maxlength="10">
+                        <button id="save-nickname-btn" class="btn-primary-sm">保存</button>
+                    </div>
                 </div>
                 <div class="settings-group">
-                    <label for="maimemo-token">墨墨 API Token</label>
+                    <label for="maimemo-token">管理员验证密钥</label>
                     <div class="input-with-action">
-                        <input type="password" id="maimemo-token" placeholder="在此输入你的 Token...">
-                        <button id="save-token-btn" class="btn-primary-sm">保存</button>
+                        <input type="password" id="maimemo-token" placeholder="在此输入预设长密钥...">
+                        <button id="save-token-btn" class="btn-primary-sm">验证</button>
                     </div>
-                    <p class="help-text">Token 仅保存在你的浏览器本地，不会上传至任何服务器。可以在墨墨 App 的“实验功能”中申请。</p>
+                    <p class="help-text">输入管理员密钥后可进入审核界面。验证通过前，不会开放审核数据的读取与审批操作。</p>
                 </div>
                 <div class="settings-group">
                     <label>功能开关</label>
                     <div class="checkbox-group">
                         <label class="checkbox-item">
-                            <input type="checkbox" id="sync-weakness-toggle" checked>
-                            <span>同步墨墨弱点 (根据手机背词情况动态调整权重)</span>
+                            <input type="checkbox" id="sync-weakness-toggle" disabled>
+                            <span>墨墨联动功能（当前停用）</span>
                         </label>
                     </div>
                 </div>
@@ -227,6 +250,18 @@
         </div>
     </div>
 
+    <div id="info-modal" class="modal">
+        <div class="modal-content confirm-modal-content info-modal-content">
+            <div class="modal-body confirm-modal-body">
+                <h3 id="info-modal-title">提示</h3>
+                <p id="info-modal-message"></p>
+                <div class="confirm-modal-actions info-modal-actions">
+                    <button id="info-modal-confirm-btn" class="btn-primary-sm confirm-btn-primary">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 新增：测试记录模态框 -->
     <div id="records-modal" class="modal">
         <div class="modal-content" style="max-width: 450px;">
@@ -253,7 +288,7 @@
 
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=26.8.8"></script>
+    <script src="app.js?v=26.8.11"></script>
 </body>
 
 </html>

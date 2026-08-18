@@ -27,6 +27,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const viewMonthlyLeaderboardBtn = document.getElementById('view-monthly-leaderboard-btn');
     const testerHeader = document.querySelector('.tester-header');
     const wordTable = document.getElementById('word-table');
+    const adminReviewPanel = document.getElementById('admin-review-panel');
+    const adminReviewStatus = document.getElementById('admin-review-status');
+    const adminReviewMeta = document.getElementById('admin-review-meta');
+    const adminReviewList = document.getElementById('admin-review-list');
+    const reviewFilterButtons = document.querySelectorAll('.review-filter-btn');
+    const refreshReviewBtn = document.getElementById('refresh-review-btn');
+    const exitReviewBtn = document.getElementById('exit-review-btn');
 
     // 设置面板 DOM
     const settingsToggleBtn = document.getElementById('settings-toggle-btn');
@@ -34,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeSettingsBtn = document.getElementById('close-settings-btn');
     const maimemoTokenInput = document.getElementById('maimemo-token');
     const userNicknameInput = document.getElementById('user-nickname');
+    const saveNicknameBtn = document.getElementById('save-nickname-btn');
     const saveTokenBtn = document.getElementById('save-token-btn');
     const syncWeaknessToggle = document.getElementById('sync-weakness-toggle');
     const kaoyanDictStatusHint = document.getElementById('kaoyan-dict-status');
@@ -58,6 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const testActionConfirmMessage = document.getElementById('test-action-confirm-message');
     const testActionCancelBtn = document.getElementById('test-action-cancel-btn');
     const testActionConfirmBtn = document.getElementById('test-action-confirm-btn');
+    const infoModal = document.getElementById('info-modal');
+    const infoModalTitle = document.getElementById('info-modal-title');
+    const infoModalMessage = document.getElementById('info-modal-message');
+    const infoModalConfirmBtn = document.getElementById('info-modal-confirm-btn');
 
     // 测试记录相关 DOM
     const recordsModal = document.getElementById('records-modal');
@@ -140,18 +152,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.8.8';
+    const APP_VERSION = 'v26.8.11';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
     const PROFILE_STORAGE_KEY = 'vocabulary_tester_profile_v1';
     const PRE_SYNC_BACKUP_KEY = 'vocabulary_tester_pre_sync_backup_v1';
+    const ADMIN_SESSION_STORAGE_KEY = 'vocabulary_tester_admin_session_v1';
+    const ACCEPTED_RULES_STORAGE_KEY = 'vocabulary_tester_accepted_rules_v1';
+    const ADMIN_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
     const MAIMEMO_RESPONSE_WEIGHTS = {
         FORGET: 3,
         VAGUE: 2,
         CANCEL_WELL_FAMILIAR: 2,
         FAMILIAR: 0,
         WELL_FAMILIAR: -1
+    };
+    const JUDGE_STATUS = {
+        CORRECT: 'correct',
+        SYNONYM: 'synonym',
+        PENDING: 'pending',
+        INCORRECT: 'incorrect'
     };
     const GLOBAL_SYN_DICT = [
         ['方法', '办法', '方式', '手段', '途径'],
@@ -205,6 +226,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ['展示', '展现'],
         ['扩大', '扩展'],
         ['缩小', '减小'],
+        ['宽阔', '宽广', '广阔'],
+        ['收到', '接收', '接到'],
         ['结束', '终止'],
         ['继续', '持续'],
         ['适合', '适宜'],
@@ -271,8 +294,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentTestMode = null; // null | 'daily' | 'weekly' | 'monthly'
     let currentTestGroups = []; // 当前正在测试的词组引用
     let currentTestSnapshot = null; // 进入测试前的快照，用于退出时回滚
+    let adminSession = null;
+    let currentReviewStatusFilter = 'pending';
+    let acceptedRules = {
+        perWord: {},
+        globalSynonyms: [],
+        blockedPairs: []
+    };
+    let acceptedGlobalSynonymMap = {};
 
     let confirmActionResolver = null;
+    let infoModalResolver = null;
 
     updateKaoyanDictStatusUI();
     kaoyanDictReadyPromise = loadKaoyanDict();
@@ -1019,6 +1051,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
     ];
 
     function setBackToTopVisible(isVisible) {
@@ -1088,7 +1121,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function ensureProfileIntegrity() {
+    function ensureProfileIntegrity(options = {}) {
+        const { preferInput = false } = options;
         const storedProfile = loadProfileData();
         const inputNickname = userNicknameInput ? userNicknameInput.value.trim() : '';
         const previousUserId = systemState.userId;
@@ -1101,11 +1135,13 @@ document.addEventListener('DOMContentLoaded', () => {
             systemState.userId = generateId();
         }
 
-        const effectiveNickname = pickPreferredNickname(
-            inputNickname,
-            storedProfile?.nickname,
-            systemState.nickname
-        );
+        const effectiveNickname = (preferInput && inputNickname)
+            ? inputNickname
+            : pickPreferredNickname(
+                inputNickname,
+                storedProfile?.nickname,
+                systemState.nickname
+            );
 
         systemState.nickname = normalizeNickname(effectiveNickname);
 
@@ -1119,6 +1155,149 @@ document.addEventListener('DOMContentLoaded', () => {
             previousUserId !== systemState.userId ||
             previousNickname !== systemState.nickname
         );
+    }
+
+    function loadAdminSession() {
+        try {
+            const stored = sessionStorage.getItem(ADMIN_SESSION_STORAGE_KEY);
+            localStorage.removeItem(ADMIN_SESSION_STORAGE_KEY);
+            if (!stored) return null;
+            const parsed = JSON.parse(stored);
+            if (!parsed?.verifiedAt) return null;
+            if ((Date.now() - new Date(parsed.verifiedAt).getTime()) > ADMIN_SESSION_TTL_MS) {
+                sessionStorage.removeItem(ADMIN_SESSION_STORAGE_KEY);
+                return null;
+            }
+            return parsed;
+        } catch (error) {
+            console.warn('管理员会话加载失败:', error);
+            return null;
+        }
+    }
+
+    function saveAdminSession(session) {
+        try {
+            adminSession = session || null;
+            if (session) {
+                sessionStorage.setItem(ADMIN_SESSION_STORAGE_KEY, JSON.stringify(session));
+                localStorage.removeItem(ADMIN_SESSION_STORAGE_KEY);
+            } else {
+                sessionStorage.removeItem(ADMIN_SESSION_STORAGE_KEY);
+                localStorage.removeItem(ADMIN_SESSION_STORAGE_KEY);
+            }
+        } catch (error) {
+            warnStorageUnavailable(error);
+        }
+    }
+
+    function loadAcceptedRules() {
+        try {
+            const stored = localStorage.getItem(ACCEPTED_RULES_STORAGE_KEY);
+            if (!stored) {
+                return {
+                    perWord: {},
+                    globalSynonyms: [],
+                    blockedPairs: []
+                };
+            }
+            const parsed = JSON.parse(stored);
+            const parsedGlobalSynonyms = Array.isArray(parsed?.globalSynonyms)
+                ? parsed.globalSynonyms.filter(item =>
+                    item
+                    && typeof item.canonical === 'string'
+                    && Array.isArray(item.members)
+                )
+                : [];
+            return {
+                perWord: parsed?.perWord || {},
+                globalSynonyms: parsedGlobalSynonyms,
+                blockedPairs: Array.isArray(parsed?.blockedPairs) ? parsed.blockedPairs : []
+            };
+        } catch (error) {
+            console.warn('审核规则加载失败:', error);
+            return {
+                perWord: {},
+                globalSynonyms: [],
+                blockedPairs: []
+            };
+        }
+    }
+
+    function rebuildAcceptedGlobalSynonymMap() {
+        const nextMap = {};
+        (acceptedRules?.globalSynonyms || []).forEach(group => {
+            if (!group || typeof group.canonical !== 'string' || !Array.isArray(group.members)) return;
+            const normalizedMembers = [...new Set(
+                group.members
+                    .flatMap(item => expandMeaningVariants(item, { useGlobalSynonyms: false }))
+                    .filter(Boolean)
+            )];
+            if (!normalizedMembers.length) return;
+            normalizedMembers.forEach(member => {
+                nextMap[member] = normalizedMembers;
+            });
+        });
+        acceptedGlobalSynonymMap = nextMap;
+    }
+
+    function saveAcceptedRules() {
+        try {
+            localStorage.setItem(ACCEPTED_RULES_STORAGE_KEY, JSON.stringify(acceptedRules));
+        } catch (error) {
+            warnStorageUnavailable(error);
+        }
+    }
+
+    function mergeAcceptedRulesFromRows(rows) {
+        const nextRules = {
+            perWord: {},
+            globalSynonyms: [],
+            blockedPairs: []
+        };
+
+        (rows || []).forEach(row => {
+            if (row.rule_type === 'per_word') {
+                if (!nextRules.perWord[row.word_key]) {
+                    nextRules.perWord[row.word_key] = [];
+                }
+                nextRules.perWord[row.word_key].push(row.answer_text);
+            } else if (row.rule_type === 'global_synonym') {
+                let targetGroup = nextRules.globalSynonyms.find(item => item.canonical === row.word_key);
+                if (!targetGroup) {
+                    targetGroup = {
+                        canonical: row.word_key,
+                        members: [row.word_key]
+                    };
+                    nextRules.globalSynonyms.push(targetGroup);
+                }
+                targetGroup.members.push(row.answer_text);
+            } else if (row.rule_type === 'blocked') {
+                nextRules.blockedPairs.push({
+                    wordKey: row.word_key,
+                    answer: row.answer_text
+                });
+            }
+        });
+
+        acceptedRules = nextRules;
+        rebuildAcceptedGlobalSynonymMap();
+        saveAcceptedRules();
+    }
+
+    async function syncAcceptedRulesFromSupabase() {
+        if (!supabase) return;
+
+        try {
+            const { data, error } = await supabase
+                .from('accepted_rules')
+                .select('word_key, answer_text, rule_type')
+                .eq('is_active', true);
+
+            if (error) throw error;
+            mergeAcceptedRulesFromRows(data || []);
+        } catch (error) {
+            console.warn('云端审核规则同步失败，将继续使用本地缓存规则:', error);
+        }
     }
 
     function createDefaultWordGroups() {
@@ -1191,6 +1370,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function loadData() {
         try {
             const storedProfile = loadProfileData();
+            adminSession = loadAdminSession();
+            acceptedRules = loadAcceptedRules();
+            rebuildAcceptedGlobalSynonymMap();
 
             // 尝试加载新格式 v3.0
             const v3Data = localStorage.getItem(STORAGE_KEY);
@@ -1225,8 +1407,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (shouldPersistProfileRepair) {
                     saveData();
                 }
-                maimemoTokenInput.value = maimemoConfig.token || '';
-                syncWeaknessToggle.checked = !!maimemoConfig.syncWeakness;
+                maimemoTokenInput.value = '';
+                syncWeaknessToggle.checked = false;
 
                 updateDashboardUI();
                 return;
@@ -1773,6 +1955,7 @@ document.addEventListener('DOMContentLoaded', () => {
         inputAnswer.addEventListener('input', (e) => {
             wordObj.userAnswer = e.target.value;
             wordObj.isCorrect = null;
+            wordObj.judgeStatus = null;
             saveData();
 
             // 触发草稿自动保存
@@ -1831,7 +2014,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (eligibleGroups.length === 0) {
-            alert('总池中没有满足间隔要求的词组，请休息一下或尝试其他模式！');
+            openInfoModal('暂时无法开始', '总池中没有满足间隔要求的词组，请休息一下或尝试其他模式。');
             return [];
         }
 
@@ -1884,7 +2067,7 @@ document.addEventListener('DOMContentLoaded', () => {
         awakenExpiredAPoolGroups();
         const aPool = wordGroups.filter(g => g.pool === 'a');
         if (aPool.length === 0) {
-            alert('A池（熟练池）目前为空，请先完成每日轻测以积累熟练词！');
+            openInfoModal('当前无法开始', 'A池（熟练池）目前为空，请先完成每日轻测以积累熟练词。');
             return [];
         }
 
@@ -1906,7 +2089,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 月度总测抽取全部词组的约 60%
         const mainPool = [...wordGroups];
-        const count = Math.floor(mainPool.length * 0.6); // 取 60%
+        const count = mainPool.length === 0 ? 0 : Math.max(1, Math.floor(mainPool.length * 0.6)); // 至少 1 题
         const selected = [];
         const tempPool = [...mainPool];
 
@@ -1934,20 +2117,21 @@ document.addEventListener('DOMContentLoaded', () => {
             '每日轻测',
             `开始今日轻测？将从总池中加权抽取 ${SETTINGS.dailyDrawCount} 组词。`,
             systemState.lastDailyTestDate,
-            1
+            SETTINGS.minIntervalDays
         );
         const confirmed = await openTestActionConfirm('今日轻测', dailyMessage);
         if (confirmed) {
+            const nextGroups = shuffleWordsWithinGroups(generateDailyTest());
+            if (nextGroups.length === 0) return;
+
             currentTestSnapshot = createCurrentTestSnapshot();
-            currentTestGroups = shuffleWordsWithinGroups(generateDailyTest());
+            currentTestGroups = nextGroups;
             currentTestMode = 'daily';
-            if (currentTestGroups.length > 0) {
-                resetCurrentTestAnswers();
-                updateTestActionPlacement(false);
-                renderTable();
-                dashboard.style.display = 'none';
-                saveDraft(currentTestMode, currentTestGroups);
-            }
+            resetCurrentTestAnswers();
+            updateTestActionPlacement(false);
+            renderTable();
+            dashboard.style.display = 'none';
+            saveDraft(currentTestMode, currentTestGroups);
         }
     });
 
@@ -1971,16 +2155,17 @@ document.addEventListener('DOMContentLoaded', () => {
         );
         const confirmed = await openTestActionConfirm('每周复盘', weeklyMessage);
         if (confirmed) {
+            const nextGroups = shuffleWordsWithinGroups(generateWeeklyReview());
+            if (nextGroups.length === 0) return;
+
             currentTestSnapshot = createCurrentTestSnapshot();
-            currentTestGroups = shuffleWordsWithinGroups(generateWeeklyReview());
+            currentTestGroups = nextGroups;
             currentTestMode = 'weekly';
-            if (currentTestGroups.length > 0) {
-                resetCurrentTestAnswers();
-                updateTestActionPlacement(false);
-                renderTable();
-                dashboard.style.display = 'none';
-                saveDraft(currentTestMode, currentTestGroups);
-            }
+            resetCurrentTestAnswers();
+            updateTestActionPlacement(false);
+            renderTable();
+            dashboard.style.display = 'none';
+            saveDraft(currentTestMode, currentTestGroups);
         }
     });
 
@@ -2002,16 +2187,17 @@ document.addEventListener('DOMContentLoaded', () => {
         );
         const confirmed = await openTestActionConfirm('月度总测', monthlyMessage);
         if (confirmed) {
+            const nextGroups = shuffleWordsWithinGroups(generateMonthlyTest());
+            if (nextGroups.length === 0) return;
+
             currentTestSnapshot = createCurrentTestSnapshot();
-            currentTestGroups = shuffleWordsWithinGroups(generateMonthlyTest());
+            currentTestGroups = nextGroups;
             currentTestMode = 'monthly';
-            if (currentTestGroups.length > 0) {
-                resetCurrentTestAnswers();
-                updateTestActionPlacement(false);
-                renderTable();
-                dashboard.style.display = 'none';
-                saveDraft(currentTestMode, currentTestGroups);
-            }
+            resetCurrentTestAnswers();
+            updateTestActionPlacement(false);
+            renderTable();
+            dashboard.style.display = 'none';
+            saveDraft(currentTestMode, currentTestGroups);
         }
     });
 
@@ -2039,6 +2225,7 @@ document.addEventListener('DOMContentLoaded', () => {
             g.words.forEach(w => {
                 w.userAnswer = '';
                 w.isCorrect = null;
+                w.judgeStatus = null;
             });
         });
     }
@@ -2070,6 +2257,29 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    if (refreshReviewBtn) {
+        refreshReviewBtn.addEventListener('click', async () => {
+            await fetchReviewQueue();
+        });
+    }
+
+    reviewFilterButtons.forEach(button => {
+        button.addEventListener('click', async () => {
+            const nextStatus = button.dataset.status || 'pending';
+            if (nextStatus === currentReviewStatusFilter) return;
+            currentReviewStatusFilter = nextStatus;
+            updateReviewFilterButtons();
+            await fetchReviewQueue();
+        });
+    });
+
+    if (exitReviewBtn) {
+        exitReviewBtn.addEventListener('click', () => {
+            saveAdminSession(null);
+            hideAdminReviewPanel();
+        });
+    }
+
     function updateTestActionPlacement(placeAfterSummary) {
         const testerParent = testerHeader.parentNode;
         if (!testerParent) return;
@@ -2085,7 +2295,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 更新行的样式（正确/错误背景色）
     function updateRowAppearance(tr, wordObj) {
-        tr.classList.remove('correct', 'incorrect');
+        tr.classList.remove('correct', 'synonym', 'pending', 'incorrect');
         if (wordObj.isCorrect === true) {
             tr.classList.add('correct');
         } else if (wordObj.isCorrect === false) {
@@ -2109,6 +2319,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirmActionResolver) {
             confirmActionResolver(result);
             confirmActionResolver = null;
+        }
+    }
+
+    function openInfoModal(title, message) {
+        infoModalTitle.textContent = title;
+        infoModalMessage.textContent = message;
+        infoModal.classList.add('open');
+
+        return new Promise((resolve) => {
+            infoModalResolver = resolve;
+        });
+    }
+
+    function closeInfoModal() {
+        infoModal.classList.remove('open');
+        if (infoModalResolver) {
+            infoModalResolver(true);
+            infoModalResolver = null;
         }
     }
 
@@ -2156,6 +2384,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (useGlobalSynonyms && synonymGroup) {
                 synonymGroup.forEach(item => queue.push(item));
             }
+
+            const acceptedSynonymGroup = useGlobalSynonyms ? acceptedGlobalSynonymMap[current] : null;
+            if (acceptedSynonymGroup) {
+                acceptedSynonymGroup.forEach(item => queue.push(item));
+            }
         }
 
         return [...variants];
@@ -2184,6 +2417,23 @@ document.addEventListener('DOMContentLoaded', () => {
         return expandOptionalAnswerVariants(str)
             .flatMap(ans => expandNearSynonymVariants(ans, options))
             .filter(Boolean);
+    }
+
+    function getAcceptedWordAnswers(wordKey) {
+        const entries = acceptedRules?.perWord?.[wordKey];
+        if (!Array.isArray(entries)) return [];
+        return [...new Set(
+            entries.flatMap(item => expandMeaningVariants(item, { useGlobalSynonyms: false }))
+        )];
+    }
+
+    function isBlockedAnswer(wordKey, userAnswer) {
+        const normalizedUserVariants = new Set(expandMeaningVariants(userAnswer, { useGlobalSynonyms: true }));
+        return (acceptedRules?.blockedPairs || []).some(item => {
+            if (!item || item.wordKey !== wordKey) return false;
+            const blockedVariants = expandMeaningVariants(item.answer, { useGlobalSynonyms: true });
+            return blockedVariants.some(variant => normalizedUserVariants.has(variant));
+        });
     }
 
     function getPossibleAnswers(wordObj) {
@@ -2236,6 +2486,330 @@ document.addEventListener('DOMContentLoaded', () => {
         return targetAnswers.some(answer => userVariants.has(answer));
     }
 
+    function isPlausiblePendingAnswer(userAnswer) {
+        const normalized = normalizeAnswerString(userAnswer);
+        return normalized.length >= 2 && /[\u4e00-\u9fff]/.test(normalized);
+    }
+
+    async function reportPendingAnswer(wordObj, userAnswer) {
+        if (!supabase) return;
+
+        try {
+            const { error } = await supabase.rpc('report_pending_answer', {
+                p_word: wordObj.word,
+                p_word_key: (wordObj.word || '').trim().toLowerCase(),
+                p_group_id: wordObj.group || null,
+                p_standard_answers: wordObj.expectedAnswer,
+                p_user_answer_raw: userAnswer,
+                p_user_answer_normalized: normalizeAnswerString(userAnswer),
+                p_user_id: systemState.userId,
+                p_user_name: systemState.nickname,
+                p_test_mode: currentTestMode || 'unknown'
+            });
+
+            if (error) {
+                console.warn('上报待审核答案失败:', error);
+            }
+        } catch (error) {
+            console.warn('待审核答案上报异常:', error);
+        }
+    }
+
+    function judgeWordAnswer(wordObj, userAnswer) {
+        const wordKey = (wordObj.word || '').trim().toLowerCase();
+        const possibleAnswers = getPossibleAnswers(wordObj);
+        const acceptedWordAnswers = getAcceptedWordAnswers(wordKey);
+        let dictAnswers = [];
+
+        if (isBlockedAnswer(wordKey, userAnswer)) {
+            return {
+                status: JUDGE_STATUS.INCORRECT,
+                possibleAnswers,
+                dictAnswers,
+                acceptedWordAnswers
+            };
+        }
+
+        if (isMeaningMatch(userAnswer, possibleAnswers)) {
+            return {
+                status: JUDGE_STATUS.CORRECT,
+                possibleAnswers,
+                dictAnswers,
+                acceptedWordAnswers
+            };
+        }
+
+        if (kaoyanDict) {
+            dictAnswers = getKaoyanDictAnswers(wordKey);
+            if (isMeaningMatch(userAnswer, dictAnswers)) {
+                return {
+                    status: JUDGE_STATUS.CORRECT,
+                    possibleAnswers,
+                    dictAnswers,
+                    acceptedWordAnswers
+                };
+            }
+        }
+
+        const synonymCandidates = [
+            ...possibleAnswers,
+            ...dictAnswers,
+            ...acceptedWordAnswers
+        ];
+        if (isMeaningMatch(userAnswer, [...new Set(synonymCandidates)], { useGlobalSynonyms: true })) {
+            return {
+                status: JUDGE_STATUS.SYNONYM,
+                possibleAnswers,
+                dictAnswers,
+                acceptedWordAnswers
+            };
+        }
+
+        if (acceptedWordAnswers.length > 0 && isMeaningMatch(userAnswer, acceptedWordAnswers, { useGlobalSynonyms: true })) {
+            return {
+                status: JUDGE_STATUS.SYNONYM,
+                possibleAnswers,
+                dictAnswers,
+                acceptedWordAnswers
+            };
+        }
+
+        return {
+            status: isPlausiblePendingAnswer(userAnswer) ? JUDGE_STATUS.PENDING : JUDGE_STATUS.INCORRECT,
+            possibleAnswers,
+            dictAnswers,
+            acceptedWordAnswers
+        };
+    }
+
+    function setAdminReviewStatus(type, message) {
+        if (!adminReviewStatus) return;
+        adminReviewStatus.className = 'dict-status';
+        adminReviewStatus.style.display = message ? 'flex' : 'none';
+        if (!message) {
+            adminReviewStatus.textContent = '';
+            return;
+        }
+        adminReviewStatus.classList.add(`dict-status-${type}`);
+        adminReviewStatus.textContent = message;
+    }
+
+    function showAdminReviewPanel() {
+        if (adminReviewPanel) {
+            adminReviewPanel.classList.add('open');
+        }
+        updateReviewFilterButtons();
+        dashboard.style.display = 'none';
+        testerHeader.style.display = 'none';
+        wordTable.style.display = 'none';
+        testSummary.style.display = 'none';
+        setFloatingNavVisible(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function hideAdminReviewPanel() {
+        if (adminReviewPanel) {
+            adminReviewPanel.classList.remove('open');
+        }
+        dashboard.style.display = 'block';
+        renderTable();
+    }
+
+    function updateReviewFilterButtons() {
+        reviewFilterButtons.forEach(button => {
+            button.classList.toggle('active', button.dataset.status === currentReviewStatusFilter);
+        });
+    }
+
+    function getReviewStatusLabel(status) {
+        if (status === 'approved') return '已通过';
+        if (status === 'rejected') return '已拒绝';
+        return '待审核';
+    }
+
+    function getReviewScopeLabel(scope) {
+        if (scope === 'global_synonym') return '全局近义';
+        if (scope === 'per_word') return '仅本词正确';
+        if (scope === 'blocked') return '已拦截';
+        return '未设置';
+    }
+
+    function extractPrimaryMeaningKey(standardAnswers) {
+        if (!standardAnswers) return '';
+        const firstMeaning = String(standardAnswers)
+            .split(/[\/；;|]/)
+            .map(item => item.trim())
+            .find(Boolean) || '';
+        return normalizeAnswerString(firstMeaning);
+    }
+
+    function renderReviewList(rows) {
+        if (!adminReviewList || !adminReviewMeta) return;
+
+        adminReviewMeta.textContent = `${getReviewStatusLabel(currentReviewStatusFilter)}聚合项 ${rows.length} 条`;
+        adminReviewList.innerHTML = '';
+
+        if (!rows.length) {
+            adminReviewList.innerHTML = `<div class="admin-review-empty">当前没有${getReviewStatusLabel(currentReviewStatusFilter)}项。</div>`;
+            return;
+        }
+
+        rows.forEach(row => {
+            const card = document.createElement('div');
+            card.className = 'review-card';
+            const primaryActionLabel = currentReviewStatusFilter === 'approved'
+                ? '恢复待审核'
+                : currentReviewStatusFilter === 'rejected'
+                    ? '改判通过'
+                    : '通过';
+            const primaryActionStatus = currentReviewStatusFilter === 'approved'
+                ? 'pending'
+                : currentReviewStatusFilter === 'rejected'
+                    ? 'approved'
+                    : 'approved';
+            const secondaryActionLabel = currentReviewStatusFilter === 'approved'
+                ? '改判拒绝'
+                : currentReviewStatusFilter === 'rejected'
+                    ? '恢复待审核'
+                    : '拒绝';
+            const secondaryActionStatus = currentReviewStatusFilter === 'approved'
+                ? 'rejected'
+                : currentReviewStatusFilter === 'rejected'
+                    ? 'pending'
+                    : 'rejected';
+            const tertiaryActionLabel = currentReviewStatusFilter === 'pending' ? '暂缓' : '';
+            const currentScopeLabel = row.review_scope ? getReviewScopeLabel(row.review_scope) : '';
+            card.innerHTML = `
+                <div class="review-card-header">
+                    <div>
+                        <div class="review-card-title">${row.word || '-'}</div>
+                        <div class="review-card-status ${currentReviewStatusFilter}">${getReviewStatusLabel(currentReviewStatusFilter)}</div>
+                    </div>
+                    <div class="review-card-count">累计 ${row.total_count || 0} 次</div>
+                </div>
+                <div class="review-card-line"><strong>标准答案：</strong>${row.standard_answers || '-'}</div>
+                <div class="review-card-line"><strong>用户答案：</strong>${row.user_answer_raw || '-'}</div>
+                <div class="review-card-line"><strong>涉及用户：</strong>${row.distinct_user_count || 0} 人</div>
+                <div class="review-card-line"><strong>示例用户：</strong>${row.sample_user_names || '匿名'}</div>
+                <div class="review-card-line"><strong>最近模式：</strong>${row.latest_test_mode || '-'}</div>
+                ${currentScopeLabel ? `<div class="review-card-line"><strong>当前规则：</strong>${currentScopeLabel}</div>` : ''}
+                ${currentReviewStatusFilter !== 'rejected' ? `
+                <div class="review-card-scope-row">
+                    <label class="review-card-scope-label" for="review-scope-${row.aggregate_key}">通过方式</label>
+                    <select id="review-scope-${row.aggregate_key}" class="review-card-scope-select">
+                        <option value="per_word" ${row.review_scope === 'per_word' || !row.review_scope ? 'selected' : ''}>仅本词正确</option>
+                        <option value="global_synonym" ${row.review_scope === 'global_synonym' ? 'selected' : ''}>全局近义</option>
+                    </select>
+                </div>` : ''}
+                <textarea class="review-card-note" placeholder="审核备注（可选）"></textarea>
+                <div class="review-card-actions">
+                    <button class="btn-primary-sm review-primary-btn">${primaryActionLabel}</button>
+                    <button class="btn-secondary-sm review-secondary-btn">${secondaryActionLabel}</button>
+                    ${tertiaryActionLabel ? `<button class="btn-secondary-sm review-tertiary-btn">${tertiaryActionLabel}</button>` : ''}
+                </div>
+            `;
+
+            const noteInput = card.querySelector('.review-card-note');
+            const primaryBtn = card.querySelector('.review-primary-btn');
+            const secondaryBtn = card.querySelector('.review-secondary-btn');
+            const tertiaryBtn = card.querySelector('.review-tertiary-btn');
+            const scopeSelect = card.querySelector('.review-card-scope-select');
+
+            primaryBtn.addEventListener('click', async () => {
+                const nextScope = primaryActionStatus === 'approved'
+                    ? (scopeSelect?.value || row.review_scope || 'per_word')
+                    : null;
+                await handleReviewDecision(row, primaryActionStatus, noteInput.value.trim(), nextScope);
+            });
+            secondaryBtn.addEventListener('click', async () => {
+                const nextScope = secondaryActionStatus === 'approved'
+                    ? (scopeSelect?.value || row.review_scope || 'per_word')
+                    : null;
+                await handleReviewDecision(row, secondaryActionStatus, noteInput.value.trim(), nextScope);
+            });
+            if (tertiaryBtn) {
+                tertiaryBtn.addEventListener('click', async () => {
+                    await handleReviewDecision(row, 'pending', noteInput.value.trim(), null);
+                });
+            }
+
+            adminReviewList.appendChild(card);
+        });
+    }
+
+    async function fetchReviewQueue() {
+        if (!supabase) {
+            setAdminReviewStatus('failed', 'Supabase 未连接，暂时无法读取审核列表。');
+            renderReviewList([]);
+            return;
+        }
+        if (!adminSession?.secret) {
+            setAdminReviewStatus('failed', '管理员会话已失效，请重新验证密钥。');
+            renderReviewList([]);
+            return;
+        }
+
+        setAdminReviewStatus('loading', '待审核列表加载中...');
+        try {
+            const { data, error } = await supabase.rpc('fetch_review_aggregates_v2', {
+                p_secret: adminSession.secret,
+                p_review_status: currentReviewStatusFilter
+            });
+
+            if (error) throw error;
+            renderReviewList(data || []);
+            setAdminReviewStatus('ready', `${getReviewStatusLabel(currentReviewStatusFilter)}列表已就绪，共 ${data?.length || 0} 条聚合项。`);
+        } catch (error) {
+            console.error('获取审核队列失败:', error);
+            if (String(error?.message || '').includes('invalid admin secret')) {
+                saveAdminSession(null);
+                setAdminReviewStatus('failed', '管理员会话已失效，请重新输入密钥验证。');
+                renderReviewList([]);
+                return;
+            }
+            renderReviewList([]);
+            setAdminReviewStatus('failed', '获取审核列表失败，请稍后重试。');
+        }
+    }
+
+    async function handleReviewDecision(row, status, note, ruleScope = null) {
+        if (!supabase) {
+            await openInfoModal('无法提交', 'Supabase 未连接，暂时无法提交审核结果。');
+            return;
+        }
+        if (!adminSession?.secret) {
+            await openInfoModal('会话失效', '管理员会话已失效，请重新验证后再操作。');
+            return;
+        }
+
+        try {
+            const globalCanonicalKey = ruleScope === 'global_synonym'
+                ? (row.global_canonical_key || extractPrimaryMeaningKey(row.standard_answers))
+                : (row.global_canonical_key || null);
+            const { error } = await supabase.rpc('apply_review_decision_v2', {
+                p_secret: adminSession.secret,
+                p_word_key: row.word_key,
+                p_user_answer_normalized: row.user_answer_normalized,
+                p_status: status,
+                p_note: note || null,
+                p_rule_scope: ruleScope,
+                p_global_canonical_key: globalCanonicalKey
+            });
+
+            if (error) throw error;
+            await syncAcceptedRulesFromSupabase();
+            await fetchReviewQueue();
+        } catch (error) {
+            console.error('提交审核结果失败:', error);
+            if (String(error?.message || '').includes('invalid admin secret')) {
+                saveAdminSession(null);
+                await openInfoModal('会话失效', '管理员会话已失效，请重新验证后再操作。');
+                return;
+            }
+            await openInfoModal('提交失败', '提交审核结果失败，请稍后重试。');
+        }
+    }
+
     // 提交检测所有单词
     submitTestBtn.addEventListener('click', async () => {
         if (kaoyanDictState.status === 'loading') {
@@ -2253,6 +2827,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let globalCorrectCount = 0;
         let globalTotalCount = 0;
         const errorGroups = new Set();
+        const pendingReportTasks = [];
         const today = new Date().toLocaleDateString();
 
         currentTestGroups.forEach(groupObj => {
@@ -2262,29 +2837,21 @@ document.addEventListener('DOMContentLoaded', () => {
             groupObj.words.forEach(wordObj => {
                 globalTotalCount++;
                 const userAns = wordObj.userAnswer || '';
+                wordObj.judgeStatus = null;
 
                 if (userAns.trim() === '') {
                     wordObj.isCorrect = false;
+                    wordObj.judgeStatus = JUDGE_STATUS.INCORRECT;
                 } else {
-                    const possibleAnswers = getPossibleAnswers(wordObj);
-                    let isMatch = isMeaningMatch(userAns, possibleAnswers);
-                    let dictAnswers = [];
-
-                    // 第二层：离线大词库义项
-                    if (!isMatch && kaoyanDict) {
-                        const wordKey = wordObj.word.toLowerCase();
-                        dictAnswers = getKaoyanDictAnswers(wordKey);
-                        isMatch = isMeaningMatch(userAns, dictAnswers);
+                    const judgeResult = judgeWordAnswer(wordObj, userAns);
+                    wordObj.judgeStatus = judgeResult.status;
+                    wordObj.isCorrect = judgeResult.status === JUDGE_STATUS.CORRECT || judgeResult.status === JUDGE_STATUS.SYNONYM;
+                    if (judgeResult.status === JUDGE_STATUS.PENDING) {
+                        pendingReportTasks.push(reportPendingAnswer({
+                            ...wordObj,
+                            group: groupObj.groupId
+                        }, userAns));
                     }
-
-                    // 第三层：全局通用近义词字典
-                    if (!isMatch) {
-                        isMatch = isMeaningMatch(userAns, [...new Set([...possibleAnswers, ...dictAnswers])], {
-                            useGlobalSynonyms: true
-                        });
-                    }
-
-                    wordObj.isCorrect = isMatch;
                 }
 
                 if (wordObj.isCorrect) {
@@ -2342,6 +2909,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentTestMode === 'daily') systemState.lastDailyTestDate = today;
         else if (currentTestMode === 'weekly') systemState.lastWeeklyReviewDate = today;
         else if (currentTestMode === 'monthly') systemState.lastMonthlyTestDate = today;
+
+        if (pendingReportTasks.length > 0) {
+            await Promise.allSettled(pendingReportTasks);
+        }
 
         syncCurrentTestGroupsBackToWordGroups();
         saveData();
@@ -2414,6 +2985,16 @@ document.addEventListener('DOMContentLoaded', () => {
         closeTestActionConfirm(true);
     });
 
+    infoModalConfirmBtn.addEventListener('click', () => {
+        closeInfoModal();
+    });
+
+    infoModal.addEventListener('click', (e) => {
+        if (e.target === infoModal) {
+            closeInfoModal();
+        }
+    });
+
     resetTestBtn.addEventListener('click', async () => {
         const confirmed = await openTestActionConfirm('重新测试', '确定要清空当前页面答案并重新开始吗？');
         if (confirmed) {
@@ -2421,6 +3002,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 groupObj.words.forEach(wordObj => {
                     wordObj.userAnswer = '';
                     wordObj.isCorrect = null;
+                    wordObj.judgeStatus = null;
                 });
             });
             saveData();
@@ -2503,54 +3085,37 @@ document.addEventListener('DOMContentLoaded', () => {
     userNicknameInput.addEventListener('change', () => {
         const draftNickname = userNicknameInput.value.trim();
         if (!draftNickname) return;
-        systemState.nickname = normalizeNickname(draftNickname);
-        ensureProfileIntegrity();
-        saveData();
+        userNicknameInput.value = normalizeNickname(draftNickname);
     });
 
-    saveTokenBtn.addEventListener('click', async () => {
-        const token = maimemoTokenInput.value.trim();
+    saveNicknameBtn.addEventListener('click', async () => {
         const nickname = userNicknameInput.value.trim();
-
-        maimemoConfig.token = token;
-        maimemoConfig.syncWeakness = syncWeaknessToggle.checked;
-
-        if (nickname) {
-            systemState.nickname = normalizeNickname(nickname);
+        if (!nickname) {
+            await openInfoModal('无法保存', '请先输入昵称后再保存。');
+            return;
         }
 
-        ensureProfileIntegrity();
+        maimemoConfig.syncWeakness = false;
+        maimemoConfig.token = '';
+        systemState.nickname = normalizeNickname(nickname);
+        userNicknameInput.value = systemState.nickname;
+
+        ensureProfileIntegrity({ preferInput: true });
         saveData();
 
-        // 只有真正更新到排行榜行时，才提示“已同步”
-        let syncStatus = '';
-        if (nickname && supabase) {
+        let syncStatus = '（本地昵称已保存）';
+        if (supabase) {
             try {
                 const { data: updatedRows, error: updateError } = await supabase
                     .from('leaderboard')
-                    .update({ nickname })
+                    .update({ nickname: systemState.nickname })
                     .eq('user_id', systemState.userId)
                     .select('id');
 
                 if (updateError) throw updateError;
 
                 if (Array.isArray(updatedRows) && updatedRows.length > 0) {
-                    console.log(`排行榜昵称同步成功，共更新 ${updatedRows.length} 条记录`);
                     syncStatus = '（排行榜昵称已同步）';
-                } else {
-                    const { count, error: countError } = await supabase
-                        .from('leaderboard')
-                        .select('id', { count: 'exact', head: true })
-                        .eq('user_id', systemState.userId);
-
-                    if (countError) throw countError;
-
-                    if ((count || 0) > 0) {
-                        console.warn('检测到排行榜存在历史记录，但本次昵称更新未生效');
-                        syncStatus = '（排行榜未更新成功，请稍后重试）';
-                    } else {
-                        syncStatus = '（本地昵称已保存，排行榜暂无历史记录可更新）';
-                    }
                 }
             } catch (err) {
                 console.error('同步排行榜昵称失败:', err);
@@ -2558,13 +3123,53 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        if (token) {
-            alert(`设置已保存！已启用墨墨 API 增强模式。${syncStatus}`);
-        } else {
-            alert(`设置已保存！${syncStatus}`);
+        settingsModal.classList.remove('open');
+        await openInfoModal('已保存', `昵称已保存。${syncStatus}`);
+    });
+
+    saveTokenBtn.addEventListener('click', async () => {
+        const adminSecret = maimemoTokenInput.value.trim();
+
+        maimemoConfig.syncWeakness = false;
+        maimemoConfig.token = '';
+
+        ensureProfileIntegrity();
+        saveData();
+
+        if (!adminSecret) {
+            await openInfoModal('无法验证', '请先输入管理员密钥后再验证。');
+            return;
         }
 
-        settingsModal.classList.remove('open');
+        if (!supabase) {
+            await openInfoModal('无法验证', 'Supabase 未连接，暂时无法验证管理员密钥。');
+            return;
+        }
+
+        try {
+            const { data, error } = await supabase.rpc('verify_admin_secret', {
+                input_secret: adminSecret
+            });
+
+            if (error) throw error;
+            if (!data || !data.valid) {
+                await openInfoModal('验证失败', '管理员密钥验证失败，请检查输入后重试。');
+                return;
+            }
+
+            saveAdminSession({
+                verifiedAt: new Date().toISOString(),
+                role: 'admin',
+                secret: adminSecret
+            });
+            maimemoTokenInput.value = '';
+            settingsModal.classList.remove('open');
+            showAdminReviewPanel();
+            await fetchReviewQueue();
+        } catch (error) {
+            console.error('管理员验证失败:', error);
+            await openInfoModal('验证异常', '管理员验证失败，请检查 Supabase 函数或密钥配置。');
+        }
     });
 
     // ==== 数据备份与恢复 ====
@@ -2609,10 +3214,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         imported.maimemoWordStatusMap
                     );
 
-                    alert('数据恢复成功！已根据新词插入逻辑自动调整进度。');
+                    await openInfoModal('恢复成功', '数据恢复成功，已根据新词插入逻辑自动调整进度。');
                     location.reload();
                 } catch (err) {
-                    alert('恢复失败：' + err.message);
+                    await openInfoModal('恢复失败', '恢复失败：' + err.message);
                 }
             };
             reader.readAsText(file);
@@ -2633,31 +3238,58 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 合并模式：检测变动
-        newGroups.forEach(newG => {
-            const existingG = wordGroups.find(g => g.groupId === newG.groupId);
-            if (!existingG) {
-                // 全新词组
-                newG.pool = 'main';
-                newG.tier = 'new';
-                newG.correctRatesHistory = [];
-                newG.consecutiveQualified = 0;
-                wordGroups.push(newG);
-            } else {
-                const isModified = getGroupWordSignature(newG) !== getGroupWordSignature(existingG);
+        const remainingTargets = [...wordGroups];
+        const mergedGroups = [];
 
-                if (isModified) {
-                    // 插入或变动逻辑：打回总池，重置进度
-                    existingG.words = newG.words;
-                    existingG.pool = 'main';
-                    existingG.tier = 'new';
-                    existingG.correctRatesHistory = [];
-                    existingG.consecutiveQualified = 0;
-                    existingG.lastTestDate = null;
-                    existingG.enteredAPoolDate = null;
-                }
+        function takeRemainingGroupBySignature(signature) {
+            if (!signature) return null;
+            const matchIndex = remainingTargets.findIndex(group => getGroupWordSignature(group) === signature);
+            if (matchIndex === -1) return null;
+            return remainingTargets.splice(matchIndex, 1)[0];
+        }
+
+        function takeRemainingGroupByWordListSignature(signature) {
+            if (!signature) return null;
+            const matchIndex = remainingTargets.findIndex(group => getGroupWordListSignature(group) === signature);
+            if (matchIndex === -1) return null;
+            return remainingTargets.splice(matchIndex, 1)[0];
+        }
+
+        newGroups.forEach(newG => {
+            const newSignature = getGroupWordSignature(newG);
+            const newWordListSignature = getGroupWordListSignature(newG);
+            const sameIdIndex = remainingTargets.findIndex(group => group.groupId === newG.groupId);
+            const sameIdGroup = sameIdIndex === -1 ? null : remainingTargets[sameIdIndex];
+            const sameIdSignature = sameIdGroup ? getGroupWordSignature(sameIdGroup) : '';
+
+            if (sameIdGroup && sameIdSignature === newSignature) {
+                remainingTargets.splice(sameIdIndex, 1);
+                mergedGroups.push(cloneGroupStateFromExisting(newG, sameIdGroup));
+                return;
             }
+
+            const sameContentGroup = takeRemainingGroupBySignature(newSignature);
+            if (sameContentGroup) {
+                mergedGroups.push(cloneGroupStateFromExisting(newG, sameContentGroup));
+                return;
+            }
+
+            const sameWordListGroup = takeRemainingGroupByWordListSignature(newWordListSignature);
+            if (sameWordListGroup) {
+                mergedGroups.push(resetGroupFromSource(newG));
+                return;
+            }
+
+            if (sameIdGroup) {
+                remainingTargets.splice(sameIdIndex, 1);
+                mergedGroups.push(resetGroupFromSource(newG));
+                return;
+            }
+
+            mergedGroups.push(resetGroupFromSource(newG));
         });
+
+        wordGroups = mergedGroups;
 
         if (newWordStatusMap && typeof newWordStatusMap === 'object') {
             maimemoWordStatusMap = { ...maimemoWordStatusMap, ...newWordStatusMap };
@@ -2867,90 +3499,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (syncMaimemoBtn) {
         syncMaimemoBtn.addEventListener('click', async () => {
-            if (!maimemoConfig.token) {
-                alert('请先在设置中填入墨墨 API Token！');
-                settingsModal.classList.add('open');
-                return;
-            }
-
-            const confirmed = await openTestActionConfirm(
-                '墨墨API',
-                '确定开始同步墨墨弱点吗？系统会读取你在墨墨中的薄弱单词，并提高本地对应词组的抽取权重。'
-            );
-
-            if (!confirmed) {
-                return;
-            }
-
-            syncMaimemoBtn.disabled = true;
-            syncMaimemoBtn.innerHTML = '<span class="leaderboard-btn-icon">🔄</span><span>同步中...</span>';
-
-            try {
-                const localWords = [...new Set(
-                    wordGroups.flatMap(group => group.words.map(word => word.word.toLowerCase()))
-                )];
-
-                const response = await fetchWithProxy(
-                    'https://open.maimemo.com/open/api/v1/study/query_study_records',
-                    maimemoConfig.token,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: {
-                            spellings: localWords,
-                            limit: Math.min(localWords.length, 1000)
-                        }
-                    }
-                );
-                const data = await response.json();
-
-                if (data.error) throw new Error(data.error);
-
-                const studyRecords = data?.data?.records || [];
-                maimemoWordStatusMap = studyRecords.reduce((statusMap, item) => {
-                    const spelling = item?.voc_spelling?.toLowerCase();
-                    const status = item?.last_response;
-                    if (spelling && status) {
-                        statusMap[spelling] = status;
-                    }
-                    return statusMap;
-                }, {});
-
-                // 找出本地受影响的词组数量
-                const affectedGroups = wordGroups.filter(g =>
-                    g.words.some(w => maimemoWordStatusMap[w.word.toLowerCase()])
-                );
-
-                const statusCounts = studyRecords.reduce((counts, item) => {
-                    const status = item?.last_response;
-                    if (status) {
-                        counts[status] = (counts[status] || 0) + 1;
-                    }
-                    return counts;
-                }, {});
-                const summaryText = Object.entries(statusCounts)
-                    .filter(([, count]) => count > 0)
-                    .map(([status, count]) => `${status} ${count} 个`)
-                    .join('，');
-
-                saveData();
-                alert(`同步成功！已读取墨墨学习状态 ${studyRecords.length} 个，并映射本地词组 ${affectedGroups.length} 组。${summaryText ? `\n\n状态分布：${summaryText}` : ''}`);
-            } catch (err) {
-                console.error('墨墨同步失败:', err);
-                let errorMsg = '同步失败：' + (err.message || '网络连接异常');
-
-                if (err.message.includes('代理函数未部署') || err.message.includes('404')) {
-                    errorMsg = '❌ 同步失败：Supabase 代理函数未部署。\n\n解决办法：\n1. 请查看根目录下的 supabase_edge_function.md 文件。\n2. 按照步骤使用 Supabase CLI 部署 maimemo-proxy 函数。\n3. 部署后即可解决跨域拦截问题。';
-                } else if (err.message.toLowerCase().includes('fetch') || err.message.includes('拦截')) {
-                    errorMsg += '\n\n提示：请求被浏览器拦截。请确保你没有直接打开 HTML 文件，而是通过本地服务器（如 Live Server）运行。';
-                }
-                alert(errorMsg);
-            } finally {
-                syncMaimemoBtn.disabled = false;
-                syncMaimemoBtn.innerHTML = '<span class="leaderboard-btn-icon">🔄</span><span>墨墨API</span>';
-            }
+            await openInfoModal('功能停用', '墨墨联动功能当前已停用，后续如需恢复将再接回。');
         });
     }
 
@@ -3027,8 +3576,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchLeaderboard(mode) {
         if (!supabase) {
-            alert('Supabase 连接未建立。请确保网络正常且已正确配置 API Key。');
             leaderboardModal.classList.remove('open');
+            await openInfoModal('连接失败', 'Supabase 连接未建立。请确保网络正常且已正确配置 API Key。');
             return;
         }
 
@@ -3042,13 +3591,9 @@ document.addEventListener('DOMContentLoaded', () => {
         leaderboardTbody.innerHTML = '';
 
         try {
-            if (mode === 'daily') {
-                await pruneExpiredDailyLeaderboardRecords();
-            }
-
             let query = supabase
                 .from('leaderboard')
-                .select('*')
+                .select('id,user_id,nickname,total_words,accuracy,test_date')
                 .eq('test_mode', mode);
 
             if (mode === 'daily') {
@@ -3059,6 +3604,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const { data, error } = await query
                 .order('accuracy', { ascending: false })
+                .order('test_date', { ascending: false })
                 .limit(queryLimit);
             if (error) throw error;
 
@@ -3141,4 +3687,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 初始化页面
     loadData();
     renderTable();
+    syncAcceptedRulesFromSupabase();
+    if (adminSession?.role === 'admin' && adminSession?.secret) {
+        showAdminReviewPanel();
+        fetchReviewQueue();
+    }
 });

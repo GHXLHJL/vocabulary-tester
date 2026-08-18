@@ -481,6 +481,18 @@ h2 {
     font-weight: bold;
 }
 
+.info-modal-content {
+    width: min(420px, 88vw);
+}
+
+.info-modal-actions {
+    justify-content: center;
+}
+
+.info-modal-actions button {
+    flex: 0 0 120px;
+}
+
 .confirm-btn-secondary {
     background: #e9ecef;
     color: #495057;
@@ -523,6 +535,7 @@ h2 {
 .input-with-action {
     display: flex;
     gap: 10px;
+    align-items: stretch;
 }
 
 .input-with-action input {
@@ -531,6 +544,15 @@ h2 {
     border: 1px solid #ced4da;
     border-radius: 4px;
     font-size: 14px;
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+.input-with-action button {
+    min-width: 104px;
+    min-height: 44px;
+    border-radius: 10px;
+    flex-shrink: 0;
 }
 
 .help-text {
@@ -832,6 +854,193 @@ h2 {
     font-size: 20px;
 }
 
+.admin-review-panel {
+    display: none;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    padding: 18px;
+    margin-bottom: 18px;
+}
+
+.admin-review-panel.open {
+    display: block;
+}
+
+.admin-review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 12px;
+}
+
+.admin-review-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.admin-review-subtitle {
+    margin: 6px 0 0;
+    color: #667085;
+    font-size: 13px;
+}
+
+.admin-review-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.admin-review-meta {
+    color: #475467;
+    font-size: 14px;
+    margin-bottom: 14px;
+}
+
+.admin-review-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+.review-filter-btn {
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #475467;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.review-filter-btn.active {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+.admin-review-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.admin-review-empty {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.review-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 14px;
+    background: #fff;
+}
+
+.review-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.review-card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.review-card-count {
+    color: #0d6efd;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.review-card-status {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.review-card-status.pending {
+    background: #fff3cd;
+    color: #8a5800;
+}
+
+.review-card-status.approved {
+    background: #e8f7ec;
+    color: #257942;
+}
+
+.review-card-status.rejected {
+    background: #f8d7da;
+    color: #a61e2f;
+}
+
+.review-card-line {
+    font-size: 14px;
+    color: #475467;
+    line-height: 1.6;
+}
+
+.review-card-line strong {
+    color: #1f2937;
+}
+
+.review-card-scope-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.review-card-scope-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #344054;
+}
+
+.review-card-scope-select {
+    min-width: 220px;
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 13px;
+    color: #1f2937;
+    background: #fff;
+}
+
+.review-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.review-card-note {
+    width: 100%;
+    margin-top: 10px;
+    min-height: 68px;
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
 .add-word-section {
     margin-bottom: 30px;
     padding: 15px;
@@ -955,12 +1164,22 @@ td input[type="text"][readonly]:focus {
     background-color: #d4edda !important;
 }
 
+.synonym {
+    background-color: #e8f7ec !important;
+}
+
+.pending {
+    background-color: #fff3cd !important;
+}
+
 .incorrect {
     background-color: #f8d7da !important;
 }
 
 /* 覆盖错误和正确行的意思列背景色为白色，不受整行背景色影响 */
 .correct .meaning-col,
+.synonym .meaning-col,
+.pending .meaning-col,
 .incorrect .meaning-col {
     background-color: #fff !important;
 }
@@ -1371,6 +1590,18 @@ td input[type="text"][readonly]:focus {
         line-height: 1.35;
         text-align: center;
         justify-content: center;
+    }
+
+    .admin-review-header {
+        flex-direction: column;
+    }
+
+    .admin-review-actions {
+        width: 100%;
+    }
+
+    .admin-review-actions button {
+        flex: 1;
     }
 
     #add-word-form {
