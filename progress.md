@@ -68,3 +68,17 @@
 - 已重跑 [replace_words_helper.js](file:///e:/project/trae/study/scripts/node/replace_words_helper.js)，重新生成 [app.js](file:///e:/project/trae/study/app.js) 中的 `defaultWords`，并将版本更新至 `v26.8.7`。
 - 已核对 [app.js:L505-L507](file:///e:/project/trae/study/app.js#L505-L507)：`group 55` 现已恢复为 `climb / climate / climax`。
 - 已执行整体验证：当前 `txt` 与 `app.js` 的 `144` 个分组完全一致，`mismatchCount = 0`。
+
+## 2026-08-19
+- 已读取 `planning-with-files` 技能说明，并再次尝试运行 `session-catchup.py`；当前环境仍缺少技能文档中引用的 `.claude` 路径脚本。
+- 已检查当前变更摘要，确认 AI 实验层主要集中在 [app.js](file:///e:/project/trae/study/app.js) 和 [index.html](file:///e:/project/trae/study/index.html)。
+- 已确认 Supabase 项目连接正常，并已成功应用 [ai_judge_cache_v1.sql](file:///e:/project/trae/study/supabase/migrations/ai_judge_cache_v1.sql)。
+- 已确认项目仓库内已有 [maimemo-proxy](file:///e:/project/trae/study/supabase/functions/maimemo-proxy/index.ts) 云函数目录，可作为 AI 云端化的落地点。
+- 已确认 `leaderboard` 表结构可支持按昵称清理 `考研战士` 的历史测试数据。
+- 已新增并部署 [deepseek-ai-judge](file:///e:/project/trae/study/supabase/functions/deepseek-ai-judge/index.ts)，当前 Supabase Functions 列表中已显示为 `ACTIVE`。
+- 已将 DeepSeek API key 写入 Supabase secret `DEEPSEEK_API_KEY`，并从本地实验文件中移除明文 key。
+- 已将 [app.js](file:///e:/project/trae/study/app.js) 的第四层 AI 请求从前端直连 DeepSeek 改为请求 Supabase 云函数。
+- 已将云函数逻辑收紧为“只接受判题业务 payload，由云端内部生成 prompt”，避免继续暴露通用 chat 代理面。
+- 已删除排行榜中昵称为 `考研战士` 的 `23` 条记录，并复查确认剩余 `0` 条。
+- 已执行 `node --check app.js`，语法通过。
+- 已执行浏览器级复测：浏览器端不再直连 `api.deepseek.com`；当前复测因命中云端缓存，仅发生缓存 RPC 读取，结果维持 `2 题中 1 对 1 错`。

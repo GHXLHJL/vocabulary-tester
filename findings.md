@@ -111,3 +111,15 @@
   - 给现有词组新增单词
   - 新增全新词组
 - 回归结果表明：以上场景均只影响发生改动的词组，其余未改动词组的 `pool/tier/enteredAPoolDate/correctRatesHistory` 保持不变，不再整批冲击 A 池。
+
+## AI 云端化与排行榜清理发现（2026-08-19）
+- 当前 AI 第四层仍是前端直接请求 `https://api.deepseek.com/chat/completions`，配置入口在 [app.js](file:///e:/project/trae/study/app.js) 与本地私有文件 `local-ai-experiment.js`。
+- 当前项目已存在 Supabase Edge Function 目录 [maimemo-proxy](file:///e:/project/trae/study/supabase/functions/maimemo-proxy/index.ts)，说明仓库已经具备“前端 -> Supabase 云函数 -> 外部 API”的接入模式。
+- [app.js](file:///e:/project/trae/study/app.js#L3792-L3814) 已有调用 `functions/v1/maimemo-proxy` 的既有逻辑，可复用相同风格来接 AI 判题云函数。
+- `leaderboard` 表当前包含 `id / user_id / nickname / total_words / correct_words / accuracy / test_date / test_mode`，适合按昵称批量清理历史测试数据。
+- `ai_judge_cache_v1.sql` 已成功应用到远端 Supabase，云端缓存表 `public.ai_judge_cache` 已存在。
+- 已新增 Supabase Edge Function [deepseek-ai-judge](file:///e:/project/trae/study/supabase/functions/deepseek-ai-judge/index.ts)，并将 DeepSeek key 改存为云端 secret `DEEPSEEK_API_KEY`。
+- [app.js](file:///e:/project/trae/study/app.js) 已不再保存或读取 DeepSeek API key，前端只向 `functions/v1/deepseek-ai-judge` 发送判题业务字段。
+- 云函数已进一步收紧：前端不再传完整 `messages`，提示词由云函数内部生成，减少被拿去当通用聊天代理的面。
+- 浏览器复测时未再出现任何直连 `api.deepseek.com` 的请求；由于云端缓存已命中，这次复测也没有再触发 AI 云函数，只有缓存 RPC 读取。
+- 排行榜中昵称为 `考研战士` 的记录在清理前共有 `23` 条，已删除完成，复查结果为 `0` 条。

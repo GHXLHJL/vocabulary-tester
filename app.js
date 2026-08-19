@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.8.11';
+    const APP_VERSION = 'v26.8.15';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -160,7 +160,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const PRE_SYNC_BACKUP_KEY = 'vocabulary_tester_pre_sync_backup_v1';
     const ADMIN_SESSION_STORAGE_KEY = 'vocabulary_tester_admin_session_v1';
     const ACCEPTED_RULES_STORAGE_KEY = 'vocabulary_tester_accepted_rules_v1';
+    const AI_JUDGE_CACHE_STORAGE_KEY = 'vocabulary_tester_ai_judge_cache_v1';
     const ADMIN_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+    const AI_EXPERIMENT_DEFAULT_CONFIG = {
+        enabled: false,
+        provider: 'deepseek',
+        model: 'deepseek-v4-flash',
+        functionName: 'deepseek-ai-judge',
+        timeoutMs: 8000,
+        maxPendingPerSubmit: 8,
+        concurrency: 4,
+        minConfidence: 0.72,
+        dailyOnly: true
+    };
     const MAIMEMO_RESPONSE_WEIGHTS = {
         FORGET: 3,
         VAGUE: 2,
@@ -1052,6 +1064,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
     ];
 
     function setBackToTopVisible(isVisible) {
@@ -1629,6 +1642,291 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function clearDraft() {
         localStorage.removeItem(DRAFT_STORAGE_KEY);
+    }
+
+    function clampNumber(value, min, max, fallback) {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) return fallback;
+        return Math.min(max, Math.max(min, numeric));
+    }
+
+    function getAiExperimentConfig() {
+        const rawConfig = window.__WORD_TESTER_AI_EXPERIMENT__ || {};
+        return {
+            enabled: rawConfig.enabled === true,
+            provider: typeof rawConfig.provider === 'string' ? rawConfig.provider : AI_EXPERIMENT_DEFAULT_CONFIG.provider,
+            model: typeof rawConfig.model === 'string' && rawConfig.model.trim()
+                ? rawConfig.model.trim()
+                : AI_EXPERIMENT_DEFAULT_CONFIG.model,
+            functionName: typeof rawConfig.functionName === 'string' && rawConfig.functionName.trim()
+                ? rawConfig.functionName.trim()
+                : AI_EXPERIMENT_DEFAULT_CONFIG.functionName,
+            timeoutMs: clampNumber(rawConfig.timeoutMs, 2000, 20000, AI_EXPERIMENT_DEFAULT_CONFIG.timeoutMs),
+            maxPendingPerSubmit: clampNumber(rawConfig.maxPendingPerSubmit, 1, 30, AI_EXPERIMENT_DEFAULT_CONFIG.maxPendingPerSubmit),
+            concurrency: clampNumber(rawConfig.concurrency, 1, 8, AI_EXPERIMENT_DEFAULT_CONFIG.concurrency),
+            minConfidence: clampNumber(rawConfig.minConfidence, 0, 1, AI_EXPERIMENT_DEFAULT_CONFIG.minConfidence),
+            dailyOnly: rawConfig.dailyOnly !== false
+        };
+    }
+
+    function isAiExperimentEnabled() {
+        const config = getAiExperimentConfig();
+        if (!config.enabled || !config.functionName || !supabase) return false;
+        if (config.dailyOnly && currentTestMode !== 'daily') return false;
+        return true;
+    }
+
+    function loadAiJudgeCache() {
+        try {
+            const stored = localStorage.getItem(AI_JUDGE_CACHE_STORAGE_KEY);
+            return stored ? JSON.parse(stored) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function saveAiJudgeCache(cache) {
+        try {
+            localStorage.setItem(AI_JUDGE_CACHE_STORAGE_KEY, JSON.stringify(cache));
+        } catch (e) {
+            console.warn('AI 判题缓存保存失败:', e);
+        }
+    }
+
+    function getAiJudgeCacheKey(wordObj, userAnswer, judgeResult) {
+        const wordKey = (wordObj.word || '').trim().toLowerCase();
+        const normalizedAnswer = normalizeAnswerString(userAnswer);
+        const answerBasis = [
+            ...(judgeResult?.possibleAnswers || []),
+            ...(judgeResult?.dictAnswers || [])
+        ].join('|');
+        return `${wordKey}__${normalizedAnswer}__${answerBasis}`;
+    }
+
+    function getAiJudgeCacheEntry(cacheKey) {
+        const cache = loadAiJudgeCache();
+        return cache[cacheKey] || null;
+    }
+
+    function normalizeAiJudgeCachePayload(payload) {
+        if (!payload || (payload.verdict !== 'correct' && payload.verdict !== 'incorrect')) {
+            return null;
+        }
+
+        return {
+            verdict: payload.verdict,
+            confidence: clampNumber(payload.confidence, 0, 1, 0),
+            scope: payload.scope === 'global_synonym' ? 'global_synonym' : 'per_word',
+            reason: typeof payload.reason === 'string' ? payload.reason.trim() : '',
+            provider: typeof payload.provider === 'string' ? payload.provider.trim() : '',
+            model_name: typeof payload.model_name === 'string' ? payload.model_name.trim() : '',
+            updatedAt: payload.updatedAt || payload.updated_at || Date.now()
+        };
+    }
+
+    function setAiJudgeCacheEntry(cacheKey, payload) {
+        const normalizedPayload = normalizeAiJudgeCachePayload(payload);
+        if (!normalizedPayload) return;
+
+        const cache = loadAiJudgeCache();
+        cache[cacheKey] = {
+            ...normalizedPayload,
+            updatedAt: normalizedPayload.updatedAt || Date.now()
+        };
+
+        const trimmedEntries = Object.entries(cache)
+            .sort((left, right) => (right[1]?.updatedAt || 0) - (left[1]?.updatedAt || 0))
+            .slice(0, 400);
+
+        saveAiJudgeCache(Object.fromEntries(trimmedEntries));
+    }
+
+    async function getCloudAiJudgeCacheEntry(cacheKey) {
+        if (!supabase || !cacheKey) return null;
+
+        try {
+            const { data, error } = await supabase.rpc('get_ai_judge_cache_v1', {
+                p_cache_key: cacheKey
+            });
+
+            if (error) throw error;
+
+            const row = Array.isArray(data) ? data[0] : data;
+            if (!row) return null;
+
+            return normalizeAiJudgeCachePayload(row);
+        } catch (error) {
+            console.warn('云端 AI 判题缓存读取失败，将继续使用本地与实时判题:', error);
+            return null;
+        }
+    }
+
+    async function setCloudAiJudgeCacheEntry(cacheKey, wordObj, userAnswer, judgeResult, payload) {
+        if (!supabase || !cacheKey) return;
+
+        const normalizedPayload = normalizeAiJudgeCachePayload(payload);
+        if (!normalizedPayload) return;
+
+        try {
+            const { error } = await supabase.rpc('upsert_ai_judge_cache_v1', {
+                p_cache_key: cacheKey,
+                p_word_key: (wordObj.word || '').trim().toLowerCase(),
+                p_normalized_user_answer: normalizeAnswerString(userAnswer),
+                p_answer_basis: [
+                    ...(judgeResult?.possibleAnswers || []),
+                    ...(judgeResult?.dictAnswers || [])
+                ].join('|'),
+                p_verdict: normalizedPayload.verdict,
+                p_confidence: normalizedPayload.confidence,
+                p_scope: normalizedPayload.scope,
+                p_reason: normalizedPayload.reason || null,
+                p_provider: normalizedPayload.provider || null,
+                p_model_name: normalizedPayload.model_name || null
+            });
+
+            if (error) throw error;
+        } catch (error) {
+            console.warn('云端 AI 判题缓存写入失败，将保留本地缓存:', error);
+        }
+    }
+
+    function parseAiJudgeResponse(rawText) {
+        if (!rawText || typeof rawText !== 'string') return null;
+        const fencedMatch = rawText.match(/```json\s*([\s\S]*?)```/i);
+        const candidate = fencedMatch ? fencedMatch[1] : rawText;
+
+        try {
+            return JSON.parse(candidate);
+        } catch (e) {
+            const braceMatch = candidate.match(/\{[\s\S]*\}/);
+            if (!braceMatch) return null;
+            try {
+                return JSON.parse(braceMatch[0]);
+            } catch (innerError) {
+                return null;
+            }
+        }
+    }
+
+    function buildAiJudgePayload(wordObj, userAnswer, judgeResult) {
+        return {
+            word: wordObj.word,
+            standardAnswers: wordObj.expectedAnswer,
+            userAnswer: userAnswer,
+            normalizedUserAnswer: normalizeAnswerString(userAnswer),
+            localAnswers: judgeResult?.possibleAnswers || [],
+            dictAnswers: judgeResult?.dictAnswers || [],
+            acceptedWordAnswers: judgeResult?.acceptedWordAnswers || []
+        };
+    }
+
+    async function requestAiJudge(wordObj, userAnswer, judgeResult) {
+        const config = getAiExperimentConfig();
+        const cacheKey = getAiJudgeCacheKey(wordObj, userAnswer, judgeResult);
+        const cached = getAiJudgeCacheEntry(cacheKey);
+
+        if (cached) {
+            return cached.verdict === 'correct' && Number(cached.confidence) >= config.minConfidence
+                ? { ...judgeResult, status: JUDGE_STATUS.CORRECT, aiJudge: cached }
+                : judgeResult;
+        }
+
+        const cloudCached = await getCloudAiJudgeCacheEntry(cacheKey);
+        if (cloudCached) {
+            setAiJudgeCacheEntry(cacheKey, cloudCached);
+            return cloudCached.verdict === 'correct' && Number(cloudCached.confidence) >= config.minConfidence
+                ? { ...judgeResult, status: JUDGE_STATUS.CORRECT, aiJudge: cloudCached }
+                : judgeResult;
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), config.timeoutMs);
+
+        try {
+            const functionUrl = `${SUPABASE_URL}/functions/v1/${config.functionName}`;
+            const response = await fetch(functionUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    apikey: SUPABASE_KEY
+                },
+                body: JSON.stringify({
+                    model: config.model,
+                    payload: buildAiJudgePayload(wordObj, userAnswer, judgeResult)
+                }),
+                signal: controller.signal
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const result = await response.json();
+            const messageContent = result?.choices?.[0]?.message?.content || '';
+            const parsed = parseAiJudgeResponse(messageContent);
+
+            if (!parsed || (parsed.verdict !== 'correct' && parsed.verdict !== 'incorrect')) {
+                return judgeResult;
+            }
+
+            const normalizedResult = normalizeAiJudgeCachePayload({
+                verdict: parsed.verdict,
+                confidence: clampNumber(parsed.confidence, 0, 1, 0),
+                scope: parsed.scope === 'global_synonym' ? 'global_synonym' : 'per_word',
+                reason: typeof parsed.reason === 'string' ? parsed.reason.trim() : '',
+                provider: config.provider,
+                model_name: config.model,
+                updatedAt: Date.now()
+            });
+
+            setAiJudgeCacheEntry(cacheKey, normalizedResult);
+            await setCloudAiJudgeCacheEntry(cacheKey, wordObj, userAnswer, judgeResult, normalizedResult);
+
+            if (normalizedResult.verdict === 'correct' && normalizedResult.confidence >= config.minConfidence) {
+                return {
+                    ...judgeResult,
+                    status: JUDGE_STATUS.CORRECT,
+                    aiJudge: normalizedResult
+                };
+            }
+
+            return judgeResult;
+        } catch (error) {
+            console.warn(`AI 判题实验层调用失败（${wordObj.word}）:`, error);
+            return judgeResult;
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    }
+
+    async function runWithConcurrency(items, limit, worker) {
+        let currentIndex = 0;
+        const workerCount = Math.min(limit, items.length);
+
+        const tasks = Array.from({ length: workerCount }, async () => {
+            while (currentIndex < items.length) {
+                const nextIndex = currentIndex;
+                currentIndex += 1;
+                await worker(items[nextIndex], nextIndex);
+            }
+        });
+
+        await Promise.all(tasks);
+    }
+
+    async function applyAiExperimentToEntries(entries) {
+        if (!isAiExperimentEnabled()) return;
+
+        const config = getAiExperimentConfig();
+        const candidates = entries
+            .filter(entry => entry.judgeResult?.status === JUDGE_STATUS.PENDING)
+            .slice(0, config.maxPendingPerSubmit);
+
+        if (!candidates.length) return;
+
+        await runWithConcurrency(candidates, config.concurrency, async (entry) => {
+            entry.judgeResult = await requestAiJudge(entry.wordObj, entry.userAns, entry.judgeResult);
+        });
     }
 
     function getTodayDateString() {
@@ -2824,155 +3122,180 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        submitTestBtn.disabled = true;
+        const submitButtonText = submitTestBtn.textContent;
+        submitTestBtn.textContent = isAiExperimentEnabled() && currentTestMode === 'daily'
+            ? 'AI 判题补充中...'
+            : '提交中...';
+
         let globalCorrectCount = 0;
         let globalTotalCount = 0;
         const errorGroups = new Set();
         const pendingReportTasks = [];
+        const submissionEntries = [];
         const today = new Date().toLocaleDateString();
 
-        currentTestGroups.forEach(groupObj => {
-            let groupCorrectCount = 0;
-            const groupTotalCount = groupObj.words.length;
+        try {
+            currentTestGroups.forEach(groupObj => {
+                groupObj.words.forEach(wordObj => {
+                    globalTotalCount++;
+                    const userAns = wordObj.userAnswer || '';
+                    wordObj.judgeStatus = null;
+                    wordObj.aiJudge = null;
 
-            groupObj.words.forEach(wordObj => {
-                globalTotalCount++;
-                const userAns = wordObj.userAnswer || '';
-                wordObj.judgeStatus = null;
+                    let judgeResult;
+                    if (userAns.trim() === '') {
+                        judgeResult = { status: JUDGE_STATUS.INCORRECT };
+                    } else {
+                        judgeResult = judgeWordAnswer(wordObj, userAns);
+                    }
 
-                if (userAns.trim() === '') {
-                    wordObj.isCorrect = false;
-                    wordObj.judgeStatus = JUDGE_STATUS.INCORRECT;
-                } else {
-                    const judgeResult = judgeWordAnswer(wordObj, userAns);
+                    submissionEntries.push({
+                        groupObj,
+                        wordObj,
+                        userAns,
+                        judgeResult
+                    });
+                });
+            });
+
+            await applyAiExperimentToEntries(submissionEntries);
+
+            currentTestGroups.forEach(groupObj => {
+                let groupCorrectCount = 0;
+                const groupTotalCount = groupObj.words.length;
+                const groupEntries = submissionEntries.filter(entry => entry.groupObj === groupObj);
+
+                groupEntries.forEach(entry => {
+                    const { wordObj, userAns, judgeResult } = entry;
                     wordObj.judgeStatus = judgeResult.status;
+                    wordObj.aiJudge = judgeResult.aiJudge || null;
                     wordObj.isCorrect = judgeResult.status === JUDGE_STATUS.CORRECT || judgeResult.status === JUDGE_STATUS.SYNONYM;
+
                     if (judgeResult.status === JUDGE_STATUS.PENDING) {
                         pendingReportTasks.push(reportPendingAnswer({
                             ...wordObj,
                             group: groupObj.groupId
                         }, userAns));
                     }
-                }
 
-                if (wordObj.isCorrect) {
-                    groupCorrectCount++;
-                    globalCorrectCount++;
-                } else {
-                    wordObj.errorCount = (wordObj.errorCount || 0) + 1;
-                    errorGroups.add(groupObj.groupId);
-                }
-            });
+                    if (wordObj.isCorrect) {
+                        groupCorrectCount++;
+                        globalCorrectCount++;
+                    } else {
+                        wordObj.errorCount = (wordObj.errorCount || 0) + 1;
+                        errorGroups.add(groupObj.groupId);
+                    }
+                });
 
-            // 更新词组层面的历史记录和状态
-            const currentRate = groupCorrectCount / groupTotalCount;
-            groupObj.correctRatesHistory.unshift(currentRate);
-            if (groupObj.correctRatesHistory.length > 10) groupObj.correctRatesHistory.pop();
+                const currentRate = groupCorrectCount / groupTotalCount;
+                groupObj.correctRatesHistory.unshift(currentRate);
+                if (groupObj.correctRatesHistory.length > 10) groupObj.correctRatesHistory.pop();
 
-            groupObj.lastTestDate = new Date().toISOString();
+                groupObj.lastTestDate = new Date().toISOString();
 
-            // 毕业/退化判定逻辑
-            if (currentTestMode === 'daily') {
-                const recentRates = groupObj.correctRatesHistory.slice(0, 3);
-                const avgRate = recentRates.reduce((a, b) => a + b, 0) / recentRates.length;
+                if (currentTestMode === 'daily') {
+                    const recentRates = groupObj.correctRatesHistory.slice(0, 3);
+                    const avgRate = recentRates.reduce((a, b) => a + b, 0) / recentRates.length;
 
-                if (avgRate >= SETTINGS.graduationThreshold && currentRate >= SETTINGS.minSingleRate) {
-                    groupObj.pool = 'a';
-                    groupObj.enteredAPoolDate = new Date().toISOString();
-                } else {
-                    if (avgRate < 0.5) groupObj.tier = 'weak';
-                    else if (avgRate <= 0.84) groupObj.tier = 'fuzzy';
-                }
-            } else if (currentTestMode === 'weekly') {
-                if (currentRate < SETTINGS.weeklyDegradation) {
-                    groupObj.pool = 'main';
-                    groupObj.tier = 'fuzzy';
-                    groupObj.enteredAPoolDate = null;
-                }
-            } else if (currentTestMode === 'monthly') {
-                if (currentRate < SETTINGS.monthlyDegradation) {
-                    groupObj.pool = 'main';
-                    groupObj.tier = 'weak';
-                    groupObj.enteredAPoolDate = null;
-                } else if (currentRate < SETTINGS.graduationThreshold) {
-                    groupObj.pool = 'main';
-                    groupObj.tier = 'fuzzy';
-                    groupObj.enteredAPoolDate = null;
-                } else {
-                    groupObj.pool = 'a';
-                    if (!groupObj.enteredAPoolDate) {
+                    if (avgRate >= SETTINGS.graduationThreshold && currentRate >= SETTINGS.minSingleRate) {
+                        groupObj.pool = 'a';
                         groupObj.enteredAPoolDate = new Date().toISOString();
+                    } else {
+                        if (avgRate < 0.5) groupObj.tier = 'weak';
+                        else if (avgRate <= 0.84) groupObj.tier = 'fuzzy';
+                    }
+                } else if (currentTestMode === 'weekly') {
+                    if (currentRate < SETTINGS.weeklyDegradation) {
+                        groupObj.pool = 'main';
+                        groupObj.tier = 'fuzzy';
+                        groupObj.enteredAPoolDate = null;
+                    }
+                } else if (currentTestMode === 'monthly') {
+                    if (currentRate < SETTINGS.monthlyDegradation) {
+                        groupObj.pool = 'main';
+                        groupObj.tier = 'weak';
+                        groupObj.enteredAPoolDate = null;
+                    } else if (currentRate < SETTINGS.graduationThreshold) {
+                        groupObj.pool = 'main';
+                        groupObj.tier = 'fuzzy';
+                        groupObj.enteredAPoolDate = null;
+                    } else {
+                        groupObj.pool = 'a';
+                        if (!groupObj.enteredAPoolDate) {
+                            groupObj.enteredAPoolDate = new Date().toISOString();
+                        }
                     }
                 }
-            }
-        });
-
-        if (currentTestMode === 'daily') systemState.lastDailyTestDate = today;
-        else if (currentTestMode === 'weekly') systemState.lastWeeklyReviewDate = today;
-        else if (currentTestMode === 'monthly') systemState.lastMonthlyTestDate = today;
-
-        if (pendingReportTasks.length > 0) {
-            await Promise.allSettled(pendingReportTasks);
-        }
-
-        syncCurrentTestGroupsBackToWordGroups();
-        saveData();
-
-        if (globalTotalCount > 0) {
-            const incorrectCount = globalTotalCount - globalCorrectCount;
-            const accuracy = ((globalCorrectCount / globalTotalCount) * 100).toFixed(1);
-
-            // 保存历史记录
-            saveTestRecord(currentTestMode, {
-                total: globalTotalCount,
-                correct: globalCorrectCount,
-                accuracy: accuracy,
-                groups: currentTestGroups
             });
 
-            // 清除草稿
-            clearDraft();
+            if (currentTestMode === 'daily') systemState.lastDailyTestDate = today;
+            else if (currentTestMode === 'weekly') systemState.lastWeeklyReviewDate = today;
+            else if (currentTestMode === 'monthly') systemState.lastMonthlyTestDate = today;
 
-            currentTestSnapshot = null;
-            renderTable();
-            updateDashboardUI();
-            // 提交后仍停留在当前独立测试页，只有退出检测时才回主页面
-            dashboard.style.display = 'none';
-
-            summaryTotal.textContent = globalTotalCount;
-            summaryCorrect.textContent = globalCorrectCount;
-            summaryIncorrect.textContent = incorrectCount;
-            summaryAccuracy.textContent = accuracy + '%';
-
-            if (errorGroups.size > 0) {
-                setFloatingNavVisible(true);
-                floatingNavBadge.textContent = errorGroups.size;
-                floatingNavList.innerHTML = '';
-                Array.from(errorGroups).sort((a, b) => a - b).forEach(gid => {
-                    const link = document.createElement('a');
-                    link.href = `#module-${gid}`;
-                    link.className = 'error-module-link';
-                    link.textContent = `模组 ${gid}`;
-                    link.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        const targetModule = document.getElementById(`module-${gid}`);
-                        if (targetModule) {
-                            window.scrollTo({ top: targetModule.getBoundingClientRect().top + window.scrollY - 20, behavior: 'smooth' });
-                            targetModule.style.backgroundColor = '#fff3cd';
-                            setTimeout(() => { targetModule.style.backgroundColor = ''; }, 1000);
-                            setFloatingNavOpen(false);
-                        }
-                    });
-                    floatingNavList.appendChild(link);
-                });
-            } else {
-                setFloatingNavVisible(false);
+            if (pendingReportTasks.length > 0) {
+                await Promise.allSettled(pendingReportTasks);
             }
-            testSummary.style.display = 'block';
-            updateTestActionPlacement(true);
-            testSummary.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-            // 上报成绩至 Supabase 排行榜
-            uploadScoreToSupabase(globalTotalCount, globalCorrectCount, accuracy, currentTestMode);
+            syncCurrentTestGroupsBackToWordGroups();
+            saveData();
+
+            if (globalTotalCount > 0) {
+                const incorrectCount = globalTotalCount - globalCorrectCount;
+                const accuracy = ((globalCorrectCount / globalTotalCount) * 100).toFixed(1);
+
+                saveTestRecord(currentTestMode, {
+                    total: globalTotalCount,
+                    correct: globalCorrectCount,
+                    accuracy: accuracy,
+                    groups: currentTestGroups
+                });
+
+                clearDraft();
+
+                currentTestSnapshot = null;
+                renderTable();
+                updateDashboardUI();
+                dashboard.style.display = 'none';
+
+                summaryTotal.textContent = globalTotalCount;
+                summaryCorrect.textContent = globalCorrectCount;
+                summaryIncorrect.textContent = incorrectCount;
+                summaryAccuracy.textContent = accuracy + '%';
+
+                if (errorGroups.size > 0) {
+                    setFloatingNavVisible(true);
+                    floatingNavBadge.textContent = errorGroups.size;
+                    floatingNavList.innerHTML = '';
+                    Array.from(errorGroups).sort((a, b) => a - b).forEach(gid => {
+                        const link = document.createElement('a');
+                        link.href = `#module-${gid}`;
+                        link.className = 'error-module-link';
+                        link.textContent = `模组 ${gid}`;
+                        link.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const targetModule = document.getElementById(`module-${gid}`);
+                            if (targetModule) {
+                                window.scrollTo({ top: targetModule.getBoundingClientRect().top + window.scrollY - 20, behavior: 'smooth' });
+                                targetModule.style.backgroundColor = '#fff3cd';
+                                setTimeout(() => { targetModule.style.backgroundColor = ''; }, 1000);
+                                setFloatingNavOpen(false);
+                            }
+                        });
+                        floatingNavList.appendChild(link);
+                    });
+                } else {
+                    setFloatingNavVisible(false);
+                }
+                testSummary.style.display = 'block';
+                updateTestActionPlacement(true);
+                testSummary.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                uploadScoreToSupabase(globalTotalCount, globalCorrectCount, accuracy, currentTestMode);
+            }
+        } finally {
+            submitTestBtn.disabled = false;
+            submitTestBtn.textContent = submitButtonText;
         }
     });
 
