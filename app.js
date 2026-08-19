@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.8.20';
+    const APP_VERSION = 'v26.8.21';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -269,6 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dailyLeaderboardRetentionDays: 5, // 每日排行榜记录有效期
         dailyLeaderboardMaxSlotsPerUser: 4, // 每日排行榜每人最多占据位次
         dailyMinIntervalDays: 1, // 每日轻测最小间隔（按天一测）
+        dailyWrongGroupCooldownDays: 2, // 每日轻测答错词组至少隔 1 个完整自然日后再抽
         graduationThreshold: 0.8, // 毕业正确率阈值 (最近3次平均)
         minSingleRate: 0.6,      // 毕业最低单次线
         weakTierWeight: 5,       // 薄弱词组权重补偿
@@ -1067,6 +1068,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
     ];
 
     function setBackToTopVisible(isVisible) {
@@ -1327,6 +1329,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     correctRatesHistory: [],
                     tier: 'new',
                     lastTestDate: null,
+                    lastDailyErrorDate: null,
                     enteredAPoolDate: null,
                     consecutiveQualified: 0
                 };
@@ -1356,6 +1359,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     correctRatesHistory: [],
                     tier: 'new',
                     lastTestDate: null,
+                    lastDailyErrorDate: null,
                     enteredAPoolDate: null,
                     consecutiveQualified: 0
                 };
@@ -2002,6 +2006,19 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${defaultMessage}\n\n距上次${modeLabel}仅 ${elapsedDays} 天，建议至少间隔 ${minIntervalDays} 天；当前还差 ${remainingDays} 天。确定要提前开始吗？`;
     }
 
+    function isDailyWrongGroupCoolingDown(groupObj) {
+        if (!groupObj?.lastDailyErrorDate) {
+            return false;
+        }
+
+        const diffDays = getElapsedDaysFromStoredDate(groupObj.lastDailyErrorDate);
+        if (diffDays === null) {
+            return false;
+        }
+
+        return diffDays < SETTINGS.dailyWrongGroupCooldownDays;
+    }
+
     function buildMonthlyRetestConfirmMessage(defaultMessage, lastDate) {
         const nextAvailableDate = getMonthlyNextAvailableDate(lastDate);
         if (!nextAvailableDate) {
@@ -2184,6 +2201,7 @@ document.addEventListener('DOMContentLoaded', () => {
             liveGroup.correctRatesHistory = [...(testGroup.correctRatesHistory || [])];
             liveGroup.consecutiveQualified = testGroup.consecutiveQualified || 0;
             liveGroup.lastTestDate = testGroup.lastTestDate || null;
+            liveGroup.lastDailyErrorDate = testGroup.lastDailyErrorDate || null;
             liveGroup.enteredAPoolDate = testGroup.enteredAPoolDate || null;
 
             const liveWordsByKey = new Map(
@@ -2320,6 +2338,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const forcedGroups = [];
 
         mainPoolGroups.forEach(groupObj => {
+            if (isDailyWrongGroupCoolingDown(groupObj)) {
+                return;
+            }
+
             if (!groupObj.lastTestDate) {
                 eligibleGroups.push(groupObj);
                 return;
@@ -3223,6 +3245,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 groupObj.lastTestDate = new Date().toISOString();
 
                 if (currentTestMode === 'daily') {
+                    groupObj.lastDailyErrorDate = currentRate < 1 ? new Date().toISOString() : null;
                     groupObj.correctRatesHistory.unshift(currentRate);
                     if (groupObj.correctRatesHistory.length > 10) groupObj.correctRatesHistory.pop();
 
@@ -3719,6 +3742,7 @@ document.addEventListener('DOMContentLoaded', () => {
             correctRatesHistory: [],
             consecutiveQualified: 0,
             lastTestDate: null,
+            lastDailyErrorDate: null,
             enteredAPoolDate: null
         };
     }
