@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.8.15';
+    const APP_VERSION = 'v26.8.18';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dailyDrawCount: 20,      // 每日抽取词组数
         dailyLeaderboardRetentionDays: 5, // 每日排行榜记录有效期
         dailyLeaderboardMaxSlotsPerUser: 4, // 每日排行榜每人最多占据位次
-        minIntervalDays: 2,      // 抽题最小间隔
+        dailyMinIntervalDays: 1, // 每日轻测最小间隔（按天一测）
         graduationThreshold: 0.8, // 毕业正确率阈值 (最近3次平均)
         minSingleRate: 0.6,      // 毕业最低单次线
         weakTierWeight: 5,       // 薄弱词组权重补偿
@@ -1025,6 +1025,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 144, word: 'bid', expectedAnswer: '出价/努力', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 144, word: 'hid(hide)', expectedAnswer: '躲藏', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 144, word: 'rid', expectedAnswer: '摆脱/除去', userAnswer: '', isCorrect: null },
+
 
 
 
@@ -2014,6 +2015,26 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${defaultMessage}\n\n上次月度总测为 ${lastDate}，按自然月规则建议到 ${nextAvailableDate.toLocaleDateString()} 后再测；当前还差 ${remainingDays} 天。确定要提前开始吗？`;
     }
 
+    function hasMetDailyGraduationCriteria(groupObj, latestDailyRate = null) {
+        const dailyRates = Array.isArray(groupObj.correctRatesHistory)
+            ? groupObj.correctRatesHistory.slice(0, 3)
+            : [];
+
+        if (latestDailyRate !== null && latestDailyRate !== undefined) {
+            dailyRates.unshift(latestDailyRate);
+        }
+
+        const trimmedRates = dailyRates.slice(0, 3);
+        if (trimmedRates.length === 0) return false;
+
+        const avgRate = trimmedRates.reduce((sum, rate) => sum + rate, 0) / trimmedRates.length;
+        const singleRate = latestDailyRate !== null && latestDailyRate !== undefined
+            ? latestDailyRate
+            : trimmedRates[0];
+
+        return avgRate >= SETTINGS.graduationThreshold && singleRate >= SETTINGS.minSingleRate;
+    }
+
     function awakenExpiredAPoolGroups() {
         const now = new Date();
         let changed = false;
@@ -2297,8 +2318,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const lastDate = new Date(groupObj.lastTestDate);
-            const diffDays = (today - lastDate) / (1000 * 60 * 60 * 24);
+            const diffDays = getElapsedDaysFromStoredDate(groupObj.lastTestDate);
+            if (diffDays === null) {
+                eligibleGroups.push(groupObj);
+                return;
+            }
 
             if (diffDays >= SETTINGS.stuckDays) {
                 forcedGroups.push({ group: groupObj, diffDays });
@@ -2306,7 +2330,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (diffDays >= SETTINGS.minIntervalDays) {
+            if (diffDays >= SETTINGS.dailyMinIntervalDays) {
                 eligibleGroups.push(groupObj);
             }
         });
@@ -2415,7 +2439,7 @@ document.addEventListener('DOMContentLoaded', () => {
             '每日轻测',
             `开始今日轻测？将从总池中加权抽取 ${SETTINGS.dailyDrawCount} 组词。`,
             systemState.lastDailyTestDate,
-            SETTINGS.minIntervalDays
+            SETTINGS.dailyMinIntervalDays
         );
         const confirmed = await openTestActionConfirm('今日轻测', dailyMessage);
         if (confirmed) {
@@ -3189,16 +3213,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 const currentRate = groupCorrectCount / groupTotalCount;
-                groupObj.correctRatesHistory.unshift(currentRate);
-                if (groupObj.correctRatesHistory.length > 10) groupObj.correctRatesHistory.pop();
-
                 groupObj.lastTestDate = new Date().toISOString();
 
                 if (currentTestMode === 'daily') {
+                    groupObj.correctRatesHistory.unshift(currentRate);
+                    if (groupObj.correctRatesHistory.length > 10) groupObj.correctRatesHistory.pop();
+
                     const recentRates = groupObj.correctRatesHistory.slice(0, 3);
                     const avgRate = recentRates.reduce((a, b) => a + b, 0) / recentRates.length;
 
-                    if (avgRate >= SETTINGS.graduationThreshold && currentRate >= SETTINGS.minSingleRate) {
+                    if (hasMetDailyGraduationCriteria(groupObj)) {
                         groupObj.pool = 'a';
                         groupObj.enteredAPoolDate = new Date().toISOString();
                     } else {
@@ -3221,9 +3245,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         groupObj.tier = 'fuzzy';
                         groupObj.enteredAPoolDate = null;
                     } else {
-                        groupObj.pool = 'a';
-                        if (!groupObj.enteredAPoolDate) {
-                            groupObj.enteredAPoolDate = new Date().toISOString();
+                        if (groupObj.pool === 'a') {
+                            if (!groupObj.enteredAPoolDate) {
+                                groupObj.enteredAPoolDate = new Date().toISOString();
+                            }
+                        } else {
+                            groupObj.pool = 'main';
                         }
                     }
                 }
