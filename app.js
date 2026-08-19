@@ -31,6 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminReviewStatus = document.getElementById('admin-review-status');
     const adminReviewMeta = document.getElementById('admin-review-meta');
     const adminReviewList = document.getElementById('admin-review-list');
+    const reviewBatchToolbar = document.getElementById('review-batch-toolbar');
+    const reviewSelectAllCheckbox = document.getElementById('review-select-all-checkbox');
+    const reviewSelectedCount = document.getElementById('review-selected-count');
+    const reviewClearSelectionBtn = document.getElementById('review-clear-selection-btn');
+    const reviewBatchApproveBtn = document.getElementById('review-batch-approve-btn');
+    const reviewBatchRejectBtn = document.getElementById('review-batch-reject-btn');
     const reviewFilterButtons = document.querySelectorAll('.review-filter-btn');
     const refreshReviewBtn = document.getElementById('refresh-review-btn');
     const exitReviewBtn = document.getElementById('exit-review-btn');
@@ -152,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.8.21';
+    const APP_VERSION = 'v26.8.22';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -309,6 +315,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentTestSnapshot = null; // 进入测试前的快照，用于退出时回滚
     let adminSession = null;
     let currentReviewStatusFilter = 'pending';
+    let currentReviewRows = [];
+    let selectedReviewKeys = new Set();
     let acceptedRules = {
         perWord: {},
         globalSynonyms: [],
@@ -1026,6 +1034,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 144, word: 'bid', expectedAnswer: '出价/努力', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 144, word: 'hid(hide)', expectedAnswer: '躲藏', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 144, word: 'rid', expectedAnswer: '摆脱/除去', userAnswer: '', isCorrect: null },
+
 
 
 
@@ -2619,7 +2628,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const nextStatus = button.dataset.status || 'pending';
             if (nextStatus === currentReviewStatusFilter) return;
             currentReviewStatusFilter = nextStatus;
+            currentReviewRows = [];
+            selectedReviewKeys.clear();
             updateReviewFilterButtons();
+            updateReviewBatchToolbar();
             await fetchReviewQueue();
         });
     });
@@ -2985,6 +2997,49 @@ document.addEventListener('DOMContentLoaded', () => {
         return '未设置';
     }
 
+    function getReviewSelectionKey(row) {
+        return `${row?.word_key || ''}__${row?.user_answer_normalized || ''}`;
+    }
+
+    function updateReviewBatchToolbar() {
+        if (!reviewBatchToolbar) return;
+
+        const isPendingView = currentReviewStatusFilter === 'pending';
+        const totalCount = currentReviewRows.length;
+        const selectedCount = currentReviewRows.filter(row => selectedReviewKeys.has(getReviewSelectionKey(row))).length;
+        const hasRows = totalCount > 0;
+        const hasSelection = isPendingView && selectedCount > 0;
+
+        reviewBatchToolbar.style.display = isPendingView && hasRows ? 'flex' : 'none';
+        if (reviewSelectedCount) {
+            reviewSelectedCount.textContent = `已选 ${selectedCount} 条`;
+        }
+        if (reviewSelectAllCheckbox) {
+            reviewSelectAllCheckbox.disabled = !isPendingView || !hasRows;
+            reviewSelectAllCheckbox.checked = isPendingView && hasRows && selectedCount === totalCount;
+            reviewSelectAllCheckbox.indeterminate = hasSelection && selectedCount < totalCount;
+        }
+        if (reviewClearSelectionBtn) {
+            reviewClearSelectionBtn.disabled = !hasSelection;
+        }
+        if (reviewBatchApproveBtn) {
+            reviewBatchApproveBtn.disabled = !hasSelection;
+        }
+        if (reviewBatchRejectBtn) {
+            reviewBatchRejectBtn.disabled = !hasSelection;
+        }
+    }
+
+    function syncReviewSelection(rows) {
+        currentReviewRows = rows || [];
+        if (currentReviewStatusFilter !== 'pending') {
+            selectedReviewKeys.clear();
+        }
+        const currentKeys = new Set(currentReviewRows.map(row => getReviewSelectionKey(row)));
+        selectedReviewKeys = new Set([...selectedReviewKeys].filter(key => currentKeys.has(key)));
+        updateReviewBatchToolbar();
+    }
+
     function extractPrimaryMeaningKey(standardAnswers) {
         if (!standardAnswers) return '';
         const firstMeaning = String(standardAnswers)
@@ -2997,6 +3052,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderReviewList(rows) {
         if (!adminReviewList || !adminReviewMeta) return;
 
+        syncReviewSelection(rows);
         adminReviewMeta.textContent = `${getReviewStatusLabel(currentReviewStatusFilter)}聚合项 ${rows.length} 条`;
         adminReviewList.innerHTML = '';
 
@@ -3008,6 +3064,10 @@ document.addEventListener('DOMContentLoaded', () => {
         rows.forEach(row => {
             const card = document.createElement('div');
             card.className = 'review-card';
+            const reviewKey = getReviewSelectionKey(row);
+            card.dataset.reviewKey = reviewKey;
+            const isPendingView = currentReviewStatusFilter === 'pending';
+            card.classList.toggle('selected', isPendingView && selectedReviewKeys.has(reviewKey));
             const primaryActionLabel = currentReviewStatusFilter === 'approved'
                 ? '恢复待审核'
                 : currentReviewStatusFilter === 'rejected'
@@ -3032,9 +3092,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentScopeLabel = row.review_scope ? getReviewScopeLabel(row.review_scope) : '';
             card.innerHTML = `
                 <div class="review-card-header">
-                    <div>
-                        <div class="review-card-title">${row.word || '-'}</div>
-                        <div class="review-card-status ${currentReviewStatusFilter}">${getReviewStatusLabel(currentReviewStatusFilter)}</div>
+                    <div class="review-card-header-left">
+                        ${isPendingView ? `<input type="checkbox" class="review-card-checkbox" ${selectedReviewKeys.has(reviewKey) ? 'checked' : ''}>` : ''}
+                        <div>
+                            <div class="review-card-title">${row.word || '-'}</div>
+                            <div class="review-card-status ${currentReviewStatusFilter}">${getReviewStatusLabel(currentReviewStatusFilter)}</div>
+                        </div>
                     </div>
                     <div class="review-card-count">累计 ${row.total_count || 0} 次</div>
                 </div>
@@ -3044,15 +3107,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="review-card-line"><strong>示例用户：</strong>${row.sample_user_names || '匿名'}</div>
                 <div class="review-card-line"><strong>最近模式：</strong>${row.latest_test_mode || '-'}</div>
                 ${currentScopeLabel ? `<div class="review-card-line"><strong>当前规则：</strong>${currentScopeLabel}</div>` : ''}
-                ${currentReviewStatusFilter !== 'rejected' ? `
-                <div class="review-card-scope-row">
-                    <label class="review-card-scope-label" for="review-scope-${row.aggregate_key}">通过方式</label>
-                    <select id="review-scope-${row.aggregate_key}" class="review-card-scope-select">
-                        <option value="per_word" ${row.review_scope === 'per_word' || !row.review_scope ? 'selected' : ''}>仅本词正确</option>
-                        <option value="global_synonym" ${row.review_scope === 'global_synonym' ? 'selected' : ''}>全局近义</option>
-                    </select>
-                </div>` : ''}
-                <textarea class="review-card-note" placeholder="审核备注（可选）"></textarea>
                 <div class="review-card-actions">
                     <button class="btn-primary-sm review-primary-btn">${primaryActionLabel}</button>
                     <button class="btn-secondary-sm review-secondary-btn">${secondaryActionLabel}</button>
@@ -3060,32 +3114,56 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
 
-            const noteInput = card.querySelector('.review-card-note');
             const primaryBtn = card.querySelector('.review-primary-btn');
             const secondaryBtn = card.querySelector('.review-secondary-btn');
             const tertiaryBtn = card.querySelector('.review-tertiary-btn');
-            const scopeSelect = card.querySelector('.review-card-scope-select');
+            const checkbox = card.querySelector('.review-card-checkbox');
+
+            if (checkbox) {
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) {
+                        selectedReviewKeys.add(reviewKey);
+                    } else {
+                        selectedReviewKeys.delete(reviewKey);
+                    }
+                    card.classList.toggle('selected', checkbox.checked);
+                    updateReviewBatchToolbar();
+                });
+            }
 
             primaryBtn.addEventListener('click', async () => {
-                const nextScope = primaryActionStatus === 'approved'
-                    ? (scopeSelect?.value || row.review_scope || 'per_word')
-                    : null;
-                await handleReviewDecision(row, primaryActionStatus, noteInput.value.trim(), nextScope);
+                const nextScope = primaryActionStatus === 'approved' ? 'per_word' : null;
+                await handleReviewDecision(row, primaryActionStatus, null, nextScope);
             });
             secondaryBtn.addEventListener('click', async () => {
-                const nextScope = secondaryActionStatus === 'approved'
-                    ? (scopeSelect?.value || row.review_scope || 'per_word')
-                    : null;
-                await handleReviewDecision(row, secondaryActionStatus, noteInput.value.trim(), nextScope);
+                const nextScope = secondaryActionStatus === 'approved' ? 'per_word' : null;
+                await handleReviewDecision(row, secondaryActionStatus, null, nextScope);
             });
             if (tertiaryBtn) {
                 tertiaryBtn.addEventListener('click', async () => {
-                    await handleReviewDecision(row, 'pending', noteInput.value.trim(), null);
+                    await handleReviewDecision(row, 'pending', null, null);
                 });
             }
 
             adminReviewList.appendChild(card);
         });
+    }
+
+    async function applyReviewDecisionRpc(row, status, note = null, ruleScope = null) {
+        const globalCanonicalKey = ruleScope === 'global_synonym'
+            ? (row.global_canonical_key || extractPrimaryMeaningKey(row.standard_answers))
+            : (row.global_canonical_key || null);
+        const { error } = await supabase.rpc('apply_review_decision_v2', {
+            p_secret: adminSession.secret,
+            p_word_key: row.word_key,
+            p_user_answer_normalized: row.user_answer_normalized,
+            p_status: status,
+            p_note: note || null,
+            p_rule_scope: ruleScope,
+            p_global_canonical_key: globalCanonicalKey
+        });
+
+        if (error) throw error;
     }
 
     async function fetchReviewQueue() {
@@ -3134,20 +3212,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const globalCanonicalKey = ruleScope === 'global_synonym'
-                ? (row.global_canonical_key || extractPrimaryMeaningKey(row.standard_answers))
-                : (row.global_canonical_key || null);
-            const { error } = await supabase.rpc('apply_review_decision_v2', {
-                p_secret: adminSession.secret,
-                p_word_key: row.word_key,
-                p_user_answer_normalized: row.user_answer_normalized,
-                p_status: status,
-                p_note: note || null,
-                p_rule_scope: ruleScope,
-                p_global_canonical_key: globalCanonicalKey
-            });
-
-            if (error) throw error;
+            await applyReviewDecisionRpc(row, status, note, ruleScope);
+            selectedReviewKeys.delete(getReviewSelectionKey(row));
             await syncAcceptedRulesFromSupabase();
             await fetchReviewQueue();
         } catch (error) {
@@ -3159,6 +3225,94 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             await openInfoModal('提交失败', '提交审核结果失败，请稍后重试。');
         }
+    }
+
+    async function handleBatchReviewDecision(status) {
+        if (!supabase) {
+            await openInfoModal('无法提交', 'Supabase 未连接，暂时无法提交审核结果。');
+            return;
+        }
+        if (!adminSession?.secret) {
+            await openInfoModal('会话失效', '管理员会话已失效，请重新验证后再操作。');
+            return;
+        }
+        if (currentReviewStatusFilter !== 'pending') {
+            selectedReviewKeys.clear();
+            updateReviewBatchToolbar();
+            await openInfoModal('当前不可批量处理', '批量通过/拒绝仅支持待审核列表。');
+            return;
+        }
+
+        const selectedRows = currentReviewRows.filter(row => selectedReviewKeys.has(getReviewSelectionKey(row)));
+        if (!selectedRows.length) {
+            await openInfoModal('未选择项目', '请先勾选需要批量处理的审核项。');
+            return;
+        }
+
+        let successCount = 0;
+        setAdminReviewStatus('loading', `正在批量提交 ${selectedRows.length} 条审核结果...`);
+
+        try {
+            for (const row of selectedRows) {
+                const ruleScope = status === 'approved' ? 'per_word' : null;
+                await applyReviewDecisionRpc(row, status, null, ruleScope);
+                successCount += 1;
+            }
+
+            selectedReviewKeys.clear();
+            await syncAcceptedRulesFromSupabase();
+            await fetchReviewQueue();
+            await openInfoModal('批量提交成功', `已批量处理 ${successCount} 条审核项。`);
+        } catch (error) {
+            console.error('批量提交审核结果失败:', error);
+            if (String(error?.message || '').includes('invalid admin secret')) {
+                saveAdminSession(null);
+                await openInfoModal('会话失效', '管理员会话已失效，请重新验证后再操作。');
+                return;
+            }
+            if (successCount > 0) {
+                await syncAcceptedRulesFromSupabase();
+                await fetchReviewQueue();
+            } else {
+                setAdminReviewStatus('failed', '批量提交审核结果失败，请稍后重试。');
+            }
+            await openInfoModal(
+                '批量提交失败',
+                successCount > 0
+                    ? `已处理 ${successCount} 条，其余提交失败，请刷新后重试。`
+                    : '批量提交审核结果失败，请稍后重试。'
+            );
+        }
+    }
+
+    if (reviewSelectAllCheckbox) {
+        reviewSelectAllCheckbox.addEventListener('change', () => {
+            if (reviewSelectAllCheckbox.checked) {
+                currentReviewRows.forEach(row => selectedReviewKeys.add(getReviewSelectionKey(row)));
+            } else {
+                currentReviewRows.forEach(row => selectedReviewKeys.delete(getReviewSelectionKey(row)));
+            }
+            renderReviewList(currentReviewRows);
+        });
+    }
+
+    if (reviewClearSelectionBtn) {
+        reviewClearSelectionBtn.addEventListener('click', () => {
+            selectedReviewKeys.clear();
+            renderReviewList(currentReviewRows);
+        });
+    }
+
+    if (reviewBatchApproveBtn) {
+        reviewBatchApproveBtn.addEventListener('click', async () => {
+            await handleBatchReviewDecision('approved');
+        });
+    }
+
+    if (reviewBatchRejectBtn) {
+        reviewBatchRejectBtn.addEventListener('click', async () => {
+            await handleBatchReviewDecision('rejected');
+        });
     }
 
     // 提交检测所有单词

@@ -905,6 +905,38 @@ h2 {
     flex-wrap: wrap;
 }
 
+.review-batch-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    border: 1px solid #dbe4f0;
+    border-radius: 12px;
+    background: #f8fbff;
+}
+
+.review-batch-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #344054;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.review-batch-checkbox input {
+    width: 16px;
+    height: 16px;
+}
+
+.review-selected-count {
+    color: #475467;
+    font-size: 13px;
+    font-weight: 700;
+}
+
 .review-filter-btn {
     border: 1px solid #cbd5e1;
     background: #f8fafc;
@@ -945,11 +977,29 @@ h2 {
     background: #fff;
 }
 
+.review-card.selected {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.08);
+}
+
 .review-card-header {
     display: flex;
     justify-content: space-between;
     gap: 12px;
     margin-bottom: 10px;
+}
+
+.review-card-header-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.review-card-checkbox {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: #0d6efd;
 }
 
 .review-card-title {
