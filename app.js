@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.8.23';
+    const APP_VERSION = 'v26.8.25';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -1079,6 +1079,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
     ];
 
     function setBackToTopVisible(isVisible) {
@@ -1721,7 +1722,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getAiJudgeCacheEntry(cacheKey) {
         const cache = loadAiJudgeCache();
-        return cache[cacheKey] || null;
+        const cached = cache[cacheKey] || null;
+        return cached?.verdict === 'correct' ? cached : null;
     }
 
     function normalizeAiJudgeCachePayload(payload) {
@@ -1742,7 +1744,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setAiJudgeCacheEntry(cacheKey, payload) {
         const normalizedPayload = normalizeAiJudgeCachePayload(payload);
-        if (!normalizedPayload) return;
+        if (!normalizedPayload || normalizedPayload.verdict !== 'correct') return;
 
         const cache = loadAiJudgeCache();
         cache[cacheKey] = {
@@ -1770,7 +1772,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = Array.isArray(data) ? data[0] : data;
             if (!row) return null;
 
-            return normalizeAiJudgeCachePayload(row);
+            const normalizedRow = normalizeAiJudgeCachePayload(row);
+            return normalizedRow?.verdict === 'correct' ? normalizedRow : null;
         } catch (error) {
             console.warn('云端 AI 判题缓存读取失败，将继续使用本地与实时判题:', error);
             return null;
@@ -1781,7 +1784,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!supabase || !cacheKey) return;
 
         const normalizedPayload = normalizeAiJudgeCachePayload(payload);
-        if (!normalizedPayload) return;
+        if (!normalizedPayload || normalizedPayload.verdict !== 'correct') return;
 
         try {
             const { error } = await supabase.rpc('upsert_ai_judge_cache_v1', {
