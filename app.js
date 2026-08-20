@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSupabase();
 
-    const APP_VERSION = 'v26.8.22';
+    const APP_VERSION = 'v26.8.23';
     const STORAGE_KEY = 'vocabulary_tester_data_v26.7.9'; // 保持存储键稳定，避免版本号变更导致本地数据丢失
     const RECORDS_STORAGE_KEY = 'vocabulary_tester_records_v1';
     const DRAFT_STORAGE_KEY = 'vocabulary_tester_draft_v1';
@@ -1034,6 +1034,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: generateId(), group: 144, word: 'bid', expectedAnswer: '出价/努力', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 144, word: 'hid(hide)', expectedAnswer: '躲藏', userAnswer: '', isCorrect: null },
         { id: generateId(), group: 144, word: 'rid', expectedAnswer: '摆脱/除去', userAnswer: '', isCorrect: null },
+
 
 
 
