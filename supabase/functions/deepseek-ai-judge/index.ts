@@ -43,10 +43,11 @@ serve(async (req) => {
       body: JSON.stringify({
         model,
         messages,
+        thinking: { type: 'disabled' },
         response_format: { type: 'json_object' },
         stream: false,
         temperature: 0.2,
-        max_tokens: 180,
+        max_tokens: 220,
       }),
     })
 
@@ -82,7 +83,7 @@ function buildJudgeMessages(payload: Record<string, unknown>) {
     {
       role: 'system',
       content:
-        '你是一个严格但务实的英语单词中文释义判题助手。你只需要判断“用户中文答案”是否应当被接受为该英文单词的正确释义。只有在语义基本等价、常见中文表达差异、或非常接近的考试释义时才返回 correct；更宽泛、仅相关、上下位词、例句延伸义、一词多义里明显不对应的义项，都必须返回 incorrect。只输出 JSON，不要输出任何额外文字。JSON 结构固定为 {"verdict":"correct|incorrect","confidence":0到1的小数,"scope":"per_word|global_synonym","reason":"一句中文理由"}。',
+        '你是一个严格但务实的英语单词中文释义判题助手。你只需要判断“用户中文答案”是否应当被接受为该英文单词的正确释义。若用户答案与标准释义语义基本等价，或只是自然中文改写、口语表达、轻微修饰、不改变核心义项的具体化表达，应返回 correct。例如“最终决定”相对“决定”，“把零件拼装起来”相对“组装”，“长得像”相对“与…相似”，通常都应视为可接受。只有在义项明显不对应、语义偏离较大、只是相关联想、上下位关系差异明显、或跨到另一层常见义项时，才返回 incorrect。只输出 JSON，不要输出任何额外文字。JSON 结构固定为 {"verdict":"correct|incorrect","confidence":0到1的小数,"scope":"per_word|global_synonym","reason":"一句中文理由"}。',
     },
     {
       role: 'user',
